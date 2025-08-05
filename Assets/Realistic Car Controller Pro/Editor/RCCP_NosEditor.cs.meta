@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ae281b9ba7a14a84cb35f39d3ccf85ed
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Editor/RCCP_NosEditor.cs
+  uploadId: 774260

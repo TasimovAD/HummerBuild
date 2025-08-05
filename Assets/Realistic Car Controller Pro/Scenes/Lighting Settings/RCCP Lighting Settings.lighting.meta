@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: a50c8527de2b1d448aafda9aecc4de8c
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 4890085278179872738
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scenes/Lighting Settings/RCCP Lighting
+    Settings.lighting
+  uploadId: 774260

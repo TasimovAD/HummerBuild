@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: f4de10d4be1909e4bb0897bb576f8f32
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Demo/RCCP_CrashHammer.cs
+  uploadId: 774260

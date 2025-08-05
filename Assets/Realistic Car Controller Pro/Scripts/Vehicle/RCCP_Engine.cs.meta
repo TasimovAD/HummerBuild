@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 9c2f0c9985a5bdb4ea7e1096e48b725d
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Vehicle/RCCP_Engine.cs
+  uploadId: 774260

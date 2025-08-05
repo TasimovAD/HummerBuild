@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d84d23f7ddca1ae479e4c4252df622c8
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/UI/RCCP_UI_Upgrade.cs
+  uploadId: 774260

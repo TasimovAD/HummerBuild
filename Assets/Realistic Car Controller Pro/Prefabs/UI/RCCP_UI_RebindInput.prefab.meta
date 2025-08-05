@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 0c0ae360adb5c35409d63363bd418bbc
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Prefabs/UI/RCCP_UI_RebindInput.prefab
+  uploadId: 774260

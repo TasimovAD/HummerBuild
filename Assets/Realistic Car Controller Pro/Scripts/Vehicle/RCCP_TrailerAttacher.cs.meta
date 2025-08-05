@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 3785ef19bba9b6c4eb4ad6b68e6d2c12
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Vehicle/RCCP_TrailerAttacher.cs
+  uploadId: 774260

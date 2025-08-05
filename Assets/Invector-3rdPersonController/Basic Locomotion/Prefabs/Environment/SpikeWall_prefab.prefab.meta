@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 86b7b86155d0cb343aef8fcf187f4783
+timeCreated: 1470164677
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Prefabs/Environment/SpikeWall_prefab.prefab
+  uploadId: 675852

@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: ebc6b2a3042775a4da2cbdbc0ee24c2b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Editors/RCCP_PlayerPrefsX.cs
+  uploadId: 774260

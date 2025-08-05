@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 42e8c0bf8f8a91f48ac00dc890f149ca
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Vehicle/RCCP_Particles.cs
+  uploadId: 774260

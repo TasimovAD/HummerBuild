@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: cfbdb39b3e999dc4fa74f3f72a5f11da
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Interface/IRCCP_UpgradeComponent.cs
+  uploadId: 774260

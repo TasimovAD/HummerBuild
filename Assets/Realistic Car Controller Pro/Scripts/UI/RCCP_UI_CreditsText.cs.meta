@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 763d4eec487a3d1428e17af5a453654f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/UI/RCCP_UI_CreditsText.cs
+  uploadId: 774260

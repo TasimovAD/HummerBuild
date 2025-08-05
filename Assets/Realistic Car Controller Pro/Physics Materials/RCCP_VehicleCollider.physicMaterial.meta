@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 9738edcfa98f23746962bceee4277c70
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 13400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Physics Materials/RCCP_VehicleCollider.physicMaterial
+  uploadId: 774260

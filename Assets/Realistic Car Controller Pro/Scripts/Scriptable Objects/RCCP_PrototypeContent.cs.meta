@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a562a0e83f21cee40865ef4dbc250c32
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Scriptable Objects/RCCP_PrototypeContent.cs
+  uploadId: 774260

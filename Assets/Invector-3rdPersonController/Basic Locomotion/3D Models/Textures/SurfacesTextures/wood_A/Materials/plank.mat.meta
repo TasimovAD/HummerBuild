@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ecde927386aa31649a90f44ed86c6016
+timeCreated: 1481756893
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/3D Models/Textures/SurfacesTextures/wood_A/Materials/plank.mat
+  uploadId: 675852

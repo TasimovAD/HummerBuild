@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: d177990c402504d4b99d46934840ac8f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Editor/RCCP_PopupWindow_PossibleWheels.cs
+  uploadId: 774260

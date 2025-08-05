@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a0e09c5242fcaeb47a6aa626b2afb2df
+timeCreated: 1470958926
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Prefabs/Environment/Base_vRoom.prefab
+  uploadId: 675852

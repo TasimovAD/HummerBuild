@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ee6b6825a91ae674c9b5887384ed033c
+timeCreated: 1487622034
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Prefabs/Others/TutorialTrigger.prefab
+  uploadId: 675852

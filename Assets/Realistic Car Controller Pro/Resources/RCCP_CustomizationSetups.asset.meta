@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ef4a827648b60894b83936452fa181c5
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Resources/RCCP_CustomizationSetups.asset
+  uploadId: 774260

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4b81f57418ba1a74194ccf6757901fbc
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Scripts/Generic/Utils/Editor/Resources/EntityPreview/EntityPreview.mat
+  uploadId: 675852

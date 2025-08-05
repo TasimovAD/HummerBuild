@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b2a8f296560ae6444858d484471ff353
+timeCreated: 1470179367
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/3D Models/Others/NewAssets/tunel.prefab
+  uploadId: 675852

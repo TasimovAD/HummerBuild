@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 6ce1eeedd7c3e21449b16bba5fa93f19
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Others/RCCP_TrailerController.cs
+  uploadId: 774260

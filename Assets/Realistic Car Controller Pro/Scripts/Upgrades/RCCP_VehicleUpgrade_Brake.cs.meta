@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 3007528c126d1a4429b0c01a75c8cb50
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Upgrades/RCCP_VehicleUpgrade_Brake.cs
+  uploadId: 774260

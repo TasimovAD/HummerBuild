@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: cfcf614290716b440aebb6fd2176350f
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Upgrades/Managers/RCCP_VehicleUpgrade_SpoilerManager.cs
+  uploadId: 774260

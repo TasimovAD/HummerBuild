@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 7ee1aa41ad5c8ae42a3b098fa826c0fe
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Vehicle/RCCP_HoodCamera.cs
+  uploadId: 774260

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: ce681f0b940baed4a92d9f6cf065313c
+timeCreated: 1470189090
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/3D Models/Others/NewAssets/floor.prefab
+  uploadId: 675852

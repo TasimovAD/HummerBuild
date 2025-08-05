@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 4ce053d1d3a1b04438fa0a4b54c89634
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Upgrades/RCCP_PoliceLights.cs
+  uploadId: 774260

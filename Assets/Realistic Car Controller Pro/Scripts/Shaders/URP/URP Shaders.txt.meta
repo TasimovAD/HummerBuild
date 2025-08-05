@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: baa5c97fcb62afd46840709929a1bab1
+TextScriptImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Shaders/URP/URP Shaders.txt
+  uploadId: 774260

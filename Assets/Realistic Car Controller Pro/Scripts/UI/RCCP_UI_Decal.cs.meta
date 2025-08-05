@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 13d7fa00cb7db7b478c433a493c2b157
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/UI/RCCP_UI_Decal.cs
+  uploadId: 774260

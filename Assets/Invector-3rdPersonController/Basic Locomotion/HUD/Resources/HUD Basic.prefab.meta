@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 65d09cff7cef67d47a9d1f9a022f2d84
+timeCreated: 1439835798
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/HUD/Resources/HUD
+    Basic.prefab
+  uploadId: 675852

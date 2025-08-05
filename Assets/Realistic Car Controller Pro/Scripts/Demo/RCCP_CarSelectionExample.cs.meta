@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 75a057b44c9e3fd4f864558613e5fec1
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Demo/RCCP_CarSelectionExample.cs
+  uploadId: 774260

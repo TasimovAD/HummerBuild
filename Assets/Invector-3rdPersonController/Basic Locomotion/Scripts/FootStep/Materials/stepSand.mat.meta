@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b6b6fe42fca74e84f86c69891ca6a989
+timeCreated: 1458583174
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Scripts/FootStep/Materials/stepSand.mat
+  uploadId: 675852

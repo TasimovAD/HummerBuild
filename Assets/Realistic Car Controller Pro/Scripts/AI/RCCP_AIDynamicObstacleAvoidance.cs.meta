@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: dda8167fea22cc543a14107cc95f856d
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/AI/RCCP_AIDynamicObstacleAvoidance.cs
+  uploadId: 774260

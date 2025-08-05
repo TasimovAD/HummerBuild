@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 0828aa52d41cc6b45af3b2c6bd1d250f
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Prefabs/Environment/Ladder_Inclined_prefab.prefab
+  uploadId: 675852

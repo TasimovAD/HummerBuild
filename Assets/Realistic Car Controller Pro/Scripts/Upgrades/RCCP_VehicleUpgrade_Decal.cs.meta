@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: a9fe4915c36432546a55cd7d58b1d241
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 178967
+  packageName: Realistic Car Controller Pro
+  packageVersion: 1.91.1
+  assetPath: Assets/Realistic Car Controller Pro/Scripts/Upgrades/RCCP_VehicleUpgrade_Decal.cs
+  uploadId: 774260

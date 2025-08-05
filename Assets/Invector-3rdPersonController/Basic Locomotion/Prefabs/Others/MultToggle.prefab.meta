@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c07024e6ec2d949d696cb53f22c649e0
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/Prefabs/Others/MultToggle.prefab
+  uploadId: 675852

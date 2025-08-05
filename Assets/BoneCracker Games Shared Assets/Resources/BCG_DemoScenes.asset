@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5b4adb64adbb21489fe5420853611ab, type: 3}
+  m_Name: BCG_DemoScenes
+  m_EditorClassIdentifier: 
+  instanceId: 0
+  demo_BlankFPS: {fileID: 102900000, guid: f878933bc6313b1428ddec7c2e8d6439, type: 3}
+  demo_BlankTPS: {fileID: 102900000, guid: f298163aa0ac2cc47a52ff1f2364bc88, type: 3}
+  demo_CityFPS: {fileID: 102900000, guid: 00aa030c32de783448359073fc0ee0ad, type: 3}
+  demo_CityTPS: {fileID: 102900000, guid: 2a141808225845f48833f06be9f2fe18, type: 3}
+  path_demo_BlankFPS: Assets/BoneCracker Games Shared Assets/Scenes/RCCP_Scene_Blank_EnterExit_FPS.unity
+  path_demo_BlankTPS: Assets/BoneCracker Games Shared Assets/Scenes/RCCP_Scene_Blank_EnterExit_TPS.unity
+  path_demo_CityFPS: Assets/BoneCracker Games Shared Assets/Scenes/RCCP_Scene_CityNew_EnterExit_FPS.unity
+  path_demo_CityTPS: Assets/BoneCracker Games Shared Assets/Scenes/RCCP_Scene_CityNew_EnterExit_TPS.unity

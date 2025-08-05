@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fb425d87706ee2c4e8a2ca02fcf1643f
+timeCreated: 1470164465
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 59332
+  packageName: Invector Third Person Controller - Basic Locomotion Template
+  packageVersion: 2.6.4b
+  assetPath: Assets/Invector-3rdPersonController/Basic Locomotion/3D Models/Others/NewAssets/spikes.asset
+  uploadId: 675852
