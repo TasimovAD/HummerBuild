@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd8f857cd4b3f46dc952dcc7fb899e13, type: 3}
+  m_Name: STG_Walls
+  m_EditorClassIdentifier: 
+  stageId: walls
+  displayName: "\u0421\u0442\u0435\u043D\u044B"
+  durationSec: 12
+  needs:
+  - type: {fileID: 11400000, guid: dc9a83f813af04ab8bb33621234602bc, type: 2}
+    amount: 15
+  - type: {fileID: 11400000, guid: 623d0e007b1c043bebd9943836bde228, type: 2}
+    amount: 15
+  - type: {fileID: 11400000, guid: 6c80f52601703407d82f551bc0fca59c, type: 2}
+    amount: 15
+  - type: {fileID: 11400000, guid: 8b8eb7bd3632240fb8b8360e6bfbd7d9, type: 2}
+    amount: 15

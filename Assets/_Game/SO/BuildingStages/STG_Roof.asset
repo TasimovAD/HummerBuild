@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd8f857cd4b3f46dc952dcc7fb899e13, type: 3}
+  m_Name: STG_Roof
+  m_EditorClassIdentifier: 
+  stageId: roof
+  displayName: "\u041A\u0440\u044B\u0448\u0430"
+  durationSec: 55
+  needs:
+  - type: {fileID: 11400000, guid: dc9a83f813af04ab8bb33621234602bc, type: 2}
+    amount: 150
