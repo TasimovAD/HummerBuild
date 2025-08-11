@@ -1,4 +1,5 @@
-public interface IInventoryProvider {
-    string ProviderId { get; }     // для сейва
+public interface IInventoryProvider
+{
     Inventory Inventory { get; }
+    string ProviderId { get; }
 }

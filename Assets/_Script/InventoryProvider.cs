@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public abstract class InventoryProvider : MonoBehaviour, IInventoryProvider {
+public abstract class InventoryProvider : MonoBehaviour, IInventoryProvider
+{
     [SerializeField] private string providerId;
     public string ProviderId => string.IsNullOrEmpty(providerId) ? name : providerId;
 
@@ -10,7 +11,12 @@ public abstract class InventoryProvider : MonoBehaviour, IInventoryProvider {
 
     public Inventory Inventory { get; private set; }
 
-    protected virtual void Awake(){
-        Inventory = new Inventory { maxSlots = slots, maxWeightKg = maxKg };
+    protected virtual void Awake()    { EnsureInit(); }
+    protected virtual void OnEnable() { EnsureInit(); }
+
+    private void EnsureInit()
+    {
+        if (Inventory == null)
+            Inventory = new Inventory { maxSlots = slots, maxWeightKg = maxKg };
     }
 }
