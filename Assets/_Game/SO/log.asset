@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4198dc9ce6ddb4ea0b7a34c9324a4d30, type: 3}
-  m_Name: log
+  m_Name: Log
   m_EditorClassIdentifier: 
-  id: 2
+  id: log
   displayName: Log
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 29ddf7f1718bb4972a6b9deacebbda25, type: 3}
   unitName: "\u0448\u0442"
   kgPerUnit: 1
   stackLimit: 999
