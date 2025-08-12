@@ -2132,7 +2132,7 @@ Transform:
   m_GameObject: {fileID: 115158823}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -1.096}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2172,8 +2172,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 5, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.6127098, y: 5, z: 0.2769286}
+  m_Center: {x: -0.055588584, y: 0, z: 0.46153635}
 --- !u!1 &119395806
 GameObject:
   m_ObjectHideFlags: 0
@@ -9642,7 +9642,7 @@ GameObject:
   - component: {fileID: 524869523}
   - component: {fileID: 524869522}
   - component: {fileID: 524869521}
-  - component: {fileID: 524869520}
+  - component: {fileID: 524869524}
   m_Layer: 5
   m_Name: TopBar
   m_TagString: Untagged
@@ -9675,53 +9675,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.2955, y: -64.2}
   m_SizeDelta: {x: 1920, y: 84}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &524869520
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 524869518}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 29c16713e764f4d53ae77b5671ffd5be, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sources:
-  - {fileID: 654074279}
-  registry: {fileID: 11400000, guid: 0f165a0668ae2400fa0f87b1949a193d, type: 2}
-  wallet: {fileID: 1438962119}
-  moneySuffix: $
-  stone:
-    root: {fileID: 1288645698}
-    type: {fileID: 11400000, guid: c2c459af4b8764cd0ba5403e67342138, type: 2}
-    label: {fileID: 1933107154}
-    icon: {fileID: 1920336944}
-  water:
-    root: {fileID: 979680385}
-    type: {fileID: 11400000, guid: 6c80f52601703407d82f551bc0fca59c, type: 2}
-    label: {fileID: 1593345760}
-    icon: {fileID: 666962139}
-  sand:
-    root: {fileID: 465697546}
-    type: {fileID: 11400000, guid: 8b8eb7bd3632240fb8b8360e6bfbd7d9, type: 2}
-    label: {fileID: 975058947}
-    icon: {fileID: 573042396}
-  log:
-    root: {fileID: 1822944889}
-    type: {fileID: 11400000, guid: dc9a83f813af04ab8bb33621234602bc, type: 2}
-    label: {fileID: 1507525253}
-    icon: {fileID: 1133490450}
-  cement:
-    root: {fileID: 1249195307}
-    type: {fileID: 11400000, guid: 623d0e007b1c043bebd9943836bde228, type: 2}
-    label: {fileID: 481078687}
-    icon: {fileID: 1471762491}
-  money:
-    root: {fileID: 651442116}
-    label: {fileID: 2071782743}
-    icon: {fileID: 1433245259}
-  debugLogs: 0
 --- !u!114 &524869521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9786,6 +9739,28 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 524869518}
   m_CullTransparentMesh: 1
+--- !u!114 &524869524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 524869518}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2a9dbd7bf3754ceeadc8e0b6adf7860, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sources:
+  - {fileID: 654074279}
+  registry: {fileID: 11400000, guid: 0f165a0668ae2400fa0f87b1949a193d, type: 2}
+  wallet: {fileID: 1438962119}
+  moneySuffix: $
+  countChildName: count
+  imageChildName: Image
+  writeOnlyNumber: 1
+  autoSetIconFromSO: 1
+  debugLogs: 0
 --- !u!1 &531093051
 GameObject:
   m_ObjectHideFlags: 0
@@ -10438,6 +10413,7 @@ GameObject:
   - component: {fileID: 569810960}
   - component: {fileID: 569810959}
   - component: {fileID: 569810971}
+  - component: {fileID: 569810972}
   m_Layer: 8
   m_Name: Character
   m_TagString: Player
@@ -11306,6 +11282,20 @@ MonoBehaviour:
   providerId: Player
   slots: 12
   maxKg: 60
+--- !u!114 &569810972
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569810958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ad4dc44325bb4ea0afe0535a1b14e47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  provider: {fileID: 0}
+  tagName: PLAYER
 --- !u!1 &572651011
 GameObject:
   m_ObjectHideFlags: 0
@@ -11977,6 +11967,7 @@ GameObject:
   - component: {fileID: 598398343}
   - component: {fileID: 598398346}
   - component: {fileID: 598398347}
+  - component: {fileID: 598398348}
   m_Layer: 13
   m_Name: RAM
   m_TagString: Untagged
@@ -12150,6 +12141,20 @@ MonoBehaviour:
   providerId: Truck_1
   slots: 24
   maxKg: 80
+--- !u!114 &598398348
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 598398342}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ad4dc44325bb4ea0afe0535a1b14e47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  provider: {fileID: 0}
+  tagName: CAR
 --- !u!114 &600545599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13204,7 +13209,6 @@ GameObject:
   - component: {fileID: 654074286}
   - component: {fileID: 654074285}
   - component: {fileID: 654074284}
-  - component: {fileID: 654074283}
   - component: {fileID: 654074279}
   - component: {fileID: 654074282}
   - component: {fileID: 654074280}
@@ -13229,7 +13233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   providerId: MainStorage
-  slots: 250
+  slots: 50
   maxKg: 250
 --- !u!114 &654074280
 MonoBehaviour:
@@ -13253,27 +13257,6 @@ MonoBehaviour:
   lvl2: 30
   lvl3: 60
 --- !u!65 &654074282
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 654074278}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1.2, y: 1.2, z: 1.2}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!65 &654074283
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -33854,7 +33837,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2015476266
 RectTransform:
   m_ObjectHideFlags: 0
