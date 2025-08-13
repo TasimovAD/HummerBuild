@@ -1,4 +1,4 @@
-// Assets/_HummerBuild/Construction/Runtime/WorkerAgent.cs
+// Assets/_Game/Construction/Runtime/WorkerAgent.cs
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
@@ -11,12 +11,12 @@ public class WorkerAgent : MonoBehaviour
     public WorkerRole Role = WorkerRole.Universal;
     public int CarryCapacityKg = 15;
     public float WalkSpeed = 3.5f;
-    public float BuildSpeedFactor = 1f; // множитель вклада в Build
+    public float BuildSpeedFactor = 1f;
     public float WagePerMinute = 5f;
 
     [Header("Ссылки")]
     public NavMeshAgent Agent;
-    public Transform HandCarrySocket; // куда цепляем prop
+    public Transform HandCarrySocket; // сокет в руке для пропа переносимого ресурса
 
     // Runtime
     BuildSite _site;
@@ -28,8 +28,16 @@ public class WorkerAgent : MonoBehaviour
 
     void Awake()
     {
+        // Автопод хват агента
         if (!Agent) Agent = GetComponent<NavMeshAgent>();
-        Agent.speed = WalkSpeed;
+        if (!Agent)
+        {
+            Debug.LogError($"[WorkerAgent] {name}: Навешай NavMeshAgent на объект.", this);
+        }
+        else
+        {
+            Agent.speed = WalkSpeed;
+        }
     }
 
     void OnEnable()
@@ -39,82 +47,170 @@ public class WorkerAgent : MonoBehaviour
 
     IEnumerator MainLoop()
     {
+        // === ЖДЁМ ПОЯВЛЕНИЯ JobManager.Instance (на случай домен‑скипа, аддитивных сцен и т.п.) ===
+        float waited = 0f;
+        while (JobManager.Instance == null && waited < 5f)
+        {
+            // Подстраховка: попробуем найти менеджер вручную
+            var found = FindObjectOfType<JobManager>();
+            if (found != null)
+            {
+                // Доступ к JobManager.Instance вызовет ленивый фолбэк (если он реализован в JobManager)
+                var _ = JobManager.Instance;
+                break;
+            }
+            waited += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (JobManager.Instance == null)
+        {
+            var all = Resources.FindObjectsOfTypeAll<JobManager>();
+            Debug.LogError($"[WorkerAgent] JobManager.Instance == null после ожидания {waited:F2}s. " +
+                           $"Найдено через Resources: {all.Length}. Scene='{gameObject.scene.name}', Worker='{name}'", this);
+            // Не выходим — ниже будет мягкий ретрай раз в 0.5с
+        }
+
+        // === Основной цикл ===
         for (;;)
         {
-            // 1) Пытаемся взять доставку
-            if (JobManager.Instance.TryGetNextHaulJob(this, out _haul))
+            // Если менеджер так и не появился — ретраим без спама
+            if (JobManager.Instance == null)
             {
-                _site = _haul.Site;
-
-                int capacityByMass = Mathf.Max(1, Mathf.FloorToInt(CarryCapacityKg / Mathf.Max(0.01f, _haul.Resource.UnitMass)));
-                int chunk = _haul.ReserveChunk(capacityByMass);
-                if (chunk > 0)
-                {
-                    _carryingRes = _haul.Resource;
-                    _carryingAmount = 0; // пока не взяли
-
-                    // Идём на Склад
-                    var storagePos = _site.Storage.transform.position;
-                    yield return MoveTo(storagePos);
-
-                    // Забираем со склада:
-                    int taken = _site.Storage.Remove(_carryingRes, chunk);
-                    if (taken <= 0)
-                    {
-                        // не удалось — бросаем джоб
-                        _haul.CompleteChunk(0);
-                        ClearCarry();
-                        yield return null;
-                        continue;
-                    }
-
-                    _carryingAmount = taken;
-                    AttachCarryProp(_carryingRes);
-
-                    // Везём на площадку
-                    var drop = _site.transform.position;
-                    yield return MoveTo(drop);
-
-                    int delivered = _site.Buffer.Add(_carryingRes, _carryingAmount);
-                    _haul.CompleteChunk(delivered);
-                    ClearCarry();
-                    // следующий цикл — новая задача
-                    continue;
-                }
+                yield return new WaitForSeconds(0.5f);
+                continue;
             }
 
-            // 2) Если нет доставки — пробуем строить
-            if (JobManager.Instance.TryGetBuildJob(this, out _build))
+            // 1) Пытаемся взять задачу Доставки (Haul)
+            if (JobManager.Instance.TryGetNextHaulJob(this, out _haul))
+            {
+                if (_haul == null) { yield return new WaitForSeconds(0.2f); continue; }
+                if (_haul.Site == null)
+                {
+                    Debug.LogWarning("[WorkerAgent] Получен HaulJob без Site. Пропущу.", this);
+                    yield return new WaitForSeconds(0.2f);
+                    continue;
+                }
+                if (_haul.Resource == null)
+                {
+                    Debug.LogWarning($"[WorkerAgent] HaulJob для '{_haul.Site.name}' имеет Resource=null. Проверь Requirements у этапа.", this);
+                    yield return new WaitForSeconds(0.2f);
+                    continue;
+                }
+
+                _site = _haul.Site;
+
+                // Проверим обязательные ссылки на стороне BuildSite
+                if (_site.Storage == null)
+                {
+                    Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' не имеет Storage (адаптер склада). Назначь в инспекторе.", _site);
+                    yield return new WaitForSeconds(0.5f);
+                    continue;
+                }
+                if (_site.Buffer == null)
+                {
+                    Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' не имеет Buffer (адаптер буфера). Назначь в инспекторе.", _site);
+                    yield return new WaitForSeconds(0.5f);
+                    continue;
+                }
+
+                // Рассчитываем переносимую порцию по массе ресурса
+                float unitMass = Mathf.Max(0.01f, _haul.Resource.UnitMass);
+                int capacityByMass = Mathf.Max(1, Mathf.FloorToInt(CarryCapacityKg / unitMass));
+
+                int chunk = _haul.ReserveChunk(capacityByMass);
+                if (chunk <= 0)
+                {
+                    // Нечего резервировать — попробуем на следующем кадре другие задачи
+                    yield return null;
+                    continue;
+                }
+
+                _carryingRes = _haul.Resource;
+                _carryingAmount = 0;
+
+                // Идём к складу и забираем ресурс
+                Vector3 storagePos = _site.Storage.transform.position;
+                yield return MoveTo(storagePos);
+
+                int taken = SafeRemove(_site.Storage, _carryingRes, chunk);
+                if (taken <= 0)
+                {
+                    // На складе пусто — освобождаем резерв и идём дальше
+                    _haul.CompleteChunk(0);
+                    ClearCarry();
+                    yield return new WaitForSeconds(0.2f);
+                    continue;
+                }
+
+                _carryingAmount = taken;
+                AttachCarryProp(_carryingRes);
+
+                // Несём на площадку и выгружаем
+                Vector3 drop = _site.transform.position;
+                yield return MoveTo(drop);
+
+                int delivered = SafeAdd(_site.Buffer, _carryingRes, _carryingAmount);
+                _haul.CompleteChunk(delivered);
+                ClearCarry();
+
+                // Идём за следующей задачей
+                continue;
+            }
+
+            // 2) Если доставок нет — пробуем строить (Build)
+            if (JobManager.Instance.TryGetBuildJob(this, out _build) && _build != null)
             {
                 _site = _build.Site;
+                if (_site == null) { yield return new WaitForSeconds(0.2f); continue; }
 
-                // Строим, пока можно
                 _site.ActiveWorkersCount++;
-                float t = 0f;
+                // Держимся в цикле, пока площадка реально может строить
                 while (_site != null && _site.CanBuildNow())
                 {
-                    // Можно добавить вклад конкретного рабочего:
+                    // Здесь можно добавить вклад конкретного рабочего, если нужно:
                     // _site.AddBuildContribution(BuildSpeedFactor);
                     yield return new WaitForSeconds(0.5f);
-                    t += 0.5f;
                 }
                 _site.ActiveWorkersCount = Mathf.Max(0, _site.ActiveWorkersCount - 1);
                 _build = null;
                 continue;
             }
 
-            // 3) Ничего нет — постоять рядом с площадкой
-            yield return new WaitForSeconds(0.5f);
+            // 3) Ничего не нашлось — немного подождать
+            yield return new WaitForSeconds(0.25f);
         }
     }
 
     IEnumerator MoveTo(Vector3 pos)
     {
+        if (!Agent)
+        {
+            Debug.LogError($"[WorkerAgent] {name}: Нет NavMeshAgent — перемещение невозможно.", this);
+            yield break;
+        }
+
         Agent.isStopped = false;
         Agent.SetDestination(pos);
-        while (Agent.pathPending || Agent.remainingDistance > Agent.stoppingDistance + 0.1f)
+
+        while (Agent.pathPending || Agent.remainingDistance > Agent.stoppingDistance + 0.05f)
             yield return null;
+
         Agent.isStopped = true;
+    }
+
+    int SafeRemove(InventoryProviderAdapter inv, ResourceDef res, int amount)
+    {
+        if (!inv) { Debug.LogError("[WorkerAgent] SafeRemove: Inventory == null", this); return 0; }
+        if (!res) { Debug.LogError("[WorkerAgent] SafeRemove: Resource == null", this); return 0; }
+        return inv.Remove(res, amount);
+    }
+
+    int SafeAdd(InventoryProviderAdapter inv, ResourceDef res, int amount)
+    {
+        if (!inv) { Debug.LogError("[WorkerAgent] SafeAdd: Inventory == null", this); return 0; }
+        if (!res) { Debug.LogError("[WorkerAgent] SafeAdd: Resource == null", this); return 0; }
+        return inv.Add(res, amount);
     }
 
     void AttachCarryProp(ResourceDef res)
