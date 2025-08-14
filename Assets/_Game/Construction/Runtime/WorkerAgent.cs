@@ -16,7 +16,7 @@ public class WorkerAgent : MonoBehaviour
 
     [Header("Ссылки")]
     public NavMeshAgent Agent;
-    public Transform HandCarrySocket; // сокет в руке для пропа переносимого ресурса
+    public Transform HandCarrySocket;
 
     // Runtime
     BuildSite _site;
@@ -28,16 +28,11 @@ public class WorkerAgent : MonoBehaviour
 
     void Awake()
     {
-        // Автопод хват агента
         if (!Agent) Agent = GetComponent<NavMeshAgent>();
         if (!Agent)
-        {
             Debug.LogError($"[WorkerAgent] {name}: Навешай NavMeshAgent на объект.", this);
-        }
         else
-        {
             Agent.speed = WalkSpeed;
-        }
     }
 
     void OnEnable()
@@ -47,96 +42,70 @@ public class WorkerAgent : MonoBehaviour
 
     IEnumerator MainLoop()
     {
-        // === ЖДЁМ ПОЯВЛЕНИЯ JobManager.Instance (на случай домен‑скипа, аддитивных сцен и т.п.) ===
+        // ждём JobManager
         float waited = 0f;
         while (JobManager.Instance == null && waited < 5f)
         {
-            // Подстраховка: попробуем найти менеджер вручную
             var found = FindObjectOfType<JobManager>();
-            if (found != null)
-            {
-                // Доступ к JobManager.Instance вызовет ленивый фолбэк (если он реализован в JobManager)
-                var _ = JobManager.Instance;
-                break;
-            }
+            if (found != null) { var _ = JobManager.Instance; break; }
             waited += Time.unscaledDeltaTime;
             yield return null;
         }
-
         if (JobManager.Instance == null)
         {
             var all = Resources.FindObjectsOfTypeAll<JobManager>();
-            Debug.LogError($"[WorkerAgent] JobManager.Instance == null после ожидания {waited:F2}s. " +
-                           $"Найдено через Resources: {all.Length}. Scene='{gameObject.scene.name}', Worker='{name}'", this);
-            // Не выходим — ниже будет мягкий ретрай раз в 0.5с
+            Debug.LogError($"[WorkerAgent] JobManager.Instance == null после ожидания {waited:F2}s. Found={all.Length}. Scene='{gameObject.scene.name}', Worker='{name}'", this);
         }
 
-        // === Основной цикл ===
         for (;;)
         {
-            // Если менеджер так и не появился — ретраим без спама
-            if (JobManager.Instance == null)
-            {
-                yield return new WaitForSeconds(0.5f);
-                continue;
-            }
+            if (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); continue; }
 
-            // 1) Пытаемся взять задачу Доставки (Haul)
+            // 1) Доставка
             if (JobManager.Instance.TryGetNextHaulJob(this, out _haul))
             {
                 if (_haul == null) { yield return new WaitForSeconds(0.2f); continue; }
-                if (_haul.Site == null)
-                {
-                    Debug.LogWarning("[WorkerAgent] Получен HaulJob без Site. Пропущу.", this);
-                    yield return new WaitForSeconds(0.2f);
-                    continue;
-                }
-                if (_haul.Resource == null)
-                {
-                    Debug.LogWarning($"[WorkerAgent] HaulJob для '{_haul.Site.name}' имеет Resource=null. Проверь Requirements у этапа.", this);
-                    yield return new WaitForSeconds(0.2f);
-                    continue;
-                }
+                if (_haul.Site == null) { Debug.LogWarning("[WorkerAgent] HaulJob без Site.", this); yield return new WaitForSeconds(0.2f); continue; }
+                if (_haul.Resource == null) { Debug.LogWarning($"[WorkerAgent] HaulJob '{_haul.Site?.name}' Resource=null.", this); yield return new WaitForSeconds(0.2f); continue; }
 
                 _site = _haul.Site;
 
-                // Проверим обязательные ссылки на стороне BuildSite
-                if (_site.Storage == null)
-                {
-                    Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' не имеет Storage (адаптер склада). Назначь в инспекторе.", _site);
-                    yield return new WaitForSeconds(0.5f);
-                    continue;
-                }
-                if (_site.Buffer == null)
-                {
-                    Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' не имеет Buffer (адаптер буфера). Назначь в инспекторе.", _site);
-                    yield return new WaitForSeconds(0.5f);
-                    continue;
-                }
+                if (_site.Storage == null) { Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' без Storage (адаптера).", _site); yield return new WaitForSeconds(0.5f); continue; }
+                if (_site.Buffer == null)  { Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' без Buffer (адаптера).", _site); yield return new WaitForSeconds(0.5f); continue; }
 
-                // Рассчитываем переносимую порцию по массе ресурса
+                // грузоподъёмность по массе
                 float unitMass = Mathf.Max(0.01f, _haul.Resource.UnitMass);
                 int capacityByMass = Mathf.Max(1, Mathf.FloorToInt(CarryCapacityKg / unitMass));
 
-                int chunk = _haul.ReserveChunk(capacityByMass);
-                if (chunk <= 0)
-                {
-                    // Нечего резервировать — попробуем на следующем кадре другие задачи
-                    yield return null;
-                    continue;
-                }
+                // кап по дефициту
+                int deficit = _site.GetDeficit(_haul.Resource);
+                if (deficit <= 0) { _haul.CompleteChunk(0); yield return null; continue; }
+
+                // резерв с учётом массы и дефицита
+                int chunk = Mathf.Min(_haul.ReserveChunk(capacityByMass), deficit);
+                if (chunk <= 0) { yield return null; continue; }
 
                 _carryingRes = _haul.Resource;
                 _carryingAmount = 0;
 
-                // Идём к складу и забираем ресурс
-                Vector3 storagePos = _site.Storage.transform.position;
-                yield return MoveTo(storagePos);
+                // — идём к складу (слоты/оффсет) —
+                var loadSlots = _site.Storage.GetComponent<SlotPoints>();
+                if (loadSlots && loadSlots.TryAcquire(out var loadSlot))
+                {
+                    yield return MoveTo(loadSlot.position);
+                    loadSlots.Release(loadSlot);
+                }
+                else
+                {
+                    Vector3 basePos = _site.Storage.transform.position;
+                    Vector3 p = basePos + Random.insideUnitSphere * 1.5f; p.y = basePos.y;
+                    yield return MoveTo(p);
+                }
 
+                // забираем
                 int taken = SafeRemove(_site.Storage, _carryingRes, chunk);
                 if (taken <= 0)
                 {
-                    // На складе пусто — освобождаем резерв и идём дальше
                     _haul.CompleteChunk(0);
                     ClearCarry();
                     yield return new WaitForSeconds(0.2f);
@@ -146,29 +115,64 @@ public class WorkerAgent : MonoBehaviour
                 _carryingAmount = taken;
                 AttachCarryProp(_carryingRes);
 
-                // Несём на площадку и выгружаем
-                Vector3 drop = _site.transform.position;
-                yield return MoveTo(drop);
+                // — везём на площадку (слоты/оффсет) —
+                var unloadSlots = _site.GetComponent<SlotPoints>();
+                if (unloadSlots && unloadSlots.TryAcquire(out var dropSlot))
+                {
+                    yield return MoveTo(dropSlot.position);
 
-                int delivered = SafeAdd(_site.Buffer, _carryingRes, _carryingAmount);
-                _haul.CompleteChunk(delivered);
+                    // кап на выгрузке по дефициту
+                    int deliverCap = _site.GetDeficit(_carryingRes);
+                    if (deliverCap > 0)
+                    {
+                        int toDrop = Mathf.Min(_carryingAmount, deliverCap);
+                        int delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
+                        _carryingAmount -= delivered;
+                        _haul.CompleteChunk(delivered);
+                    }
+                    else
+                    {
+                        _haul.CompleteChunk(0);
+                    }
+
+                    unloadSlots.Release(dropSlot);
+                }
+                else
+                {
+                    Vector3 basePos = _site.transform.position;
+                    Vector3 p = basePos + Random.insideUnitSphere * 1.5f; p.y = basePos.y;
+                    yield return MoveTo(p);
+
+                    int deliverCap = _site.GetDeficit(_carryingRes);
+                    if (deliverCap > 0)
+                    {
+                        int toDrop = Mathf.Min(_carryingAmount, deliverCap);
+                        int delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
+                        _carryingAmount -= delivered;
+                        _haul.CompleteChunk(delivered);
+                    }
+                    else
+                    {
+                        _haul.CompleteChunk(0);
+                    }
+                }
+
+                // очистка
+                _carryingAmount = 0;
                 ClearCarry();
-
-                // Идём за следующей задачей
                 continue;
             }
 
-            // 2) Если доставок нет — пробуем строить (Build)
+            // 2) Стройка
             if (JobManager.Instance.TryGetBuildJob(this, out _build) && _build != null)
             {
                 _site = _build.Site;
                 if (_site == null) { yield return new WaitForSeconds(0.2f); continue; }
 
                 _site.ActiveWorkersCount++;
-                // Держимся в цикле, пока площадка реально может строить
                 while (_site != null && _site.CanBuildNow())
                 {
-                    // Здесь можно добавить вклад конкретного рабочего, если нужно:
+                    // если нужна “работа” от рабочего — добавь сюда начисление
                     // _site.AddBuildContribution(BuildSpeedFactor);
                     yield return new WaitForSeconds(0.5f);
                 }
@@ -177,7 +181,7 @@ public class WorkerAgent : MonoBehaviour
                 continue;
             }
 
-            // 3) Ничего не нашлось — немного подождать
+            // 3) Idle
             yield return new WaitForSeconds(0.25f);
         }
     }

@@ -62,7 +62,7 @@ public class BuildPanelUI : MonoBehaviour
         foreach (Transform c in ResourceListRoot) Destroy(c.gameObject);
         if (st)
         {
-            foreach (var (res, required, onSite) in Target.GetStageResourceInfo())
+            foreach (var (res, required, onSite, _) in Target.GetStageResourceInfo())
             {
                 var go = Instantiate(ResourceRowPrefab, ResourceListRoot);
                 var row = go.GetComponent<ResourceRowUI>();

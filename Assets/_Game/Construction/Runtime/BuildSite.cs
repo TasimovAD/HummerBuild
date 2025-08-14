@@ -25,21 +25,26 @@ public class BuildSite : MonoBehaviour
     public bool IsPaused { get; private set; }
     public bool IsBlockedByLack { get; private set; }
 
+    public int ActiveWorkersCount = 0;
+
     public event Action OnUIChanged;
     public event Action<float> OnStageProgressChanged;
 
-    ConstructionStage Stage => (Plan != null && CurrentStageIndex < Plan.Stages.Count) ? Plan.Stages[CurrentStageIndex] : null;
+    // Текущий этап
+    ConstructionStage Stage => (Plan != null && Plan.Stages != null && CurrentStageIndex >= 0 && CurrentStageIndex < Plan.Stages.Count)
+        ? Plan.Stages[CurrentStageIndex]
+        : null;
 
     void OnEnable()
     {
         if (Storage) Storage.OnChanged += OnInventoryChanged;
-        if (Buffer) Buffer.OnChanged += OnInventoryChanged;
+        if (Buffer)  Buffer.OnChanged  += OnInventoryChanged;
         InvokeRepeating(nameof(TickSite), 0.5f, 0.5f);
     }
     void OnDisable()
     {
         if (Storage) Storage.OnChanged -= OnInventoryChanged;
-        if (Buffer) Buffer.OnChanged -= OnInventoryChanged;
+        if (Buffer)  Buffer.OnChanged  -= OnInventoryChanged;
         CancelInvoke(nameof(TickSite));
     }
 
@@ -56,56 +61,91 @@ public class BuildSite : MonoBehaviour
         TryBuildTick(0.5f);
     }
 
+    // дефицит по ресурсу для текущего этапа (учитывает буфер + "в пути")
+    public int GetDeficit(ResourceDef res)
+    {
+        if (Stage == null || res == null) return 0;
+
+        int required = RequiredAmountFor(res);
+        if (required <= 0) return 0;
+
+        int inBuffer  = Buffer ? Buffer.Get(res) : 0;
+        int inTransit = JobManager.Instance ? JobManager.Instance.GetInTransit(this, res) : 0;
+
+        return Mathf.Max(0, required - inBuffer - inTransit);
+    }
+
+    // Быстрая утилита: сколько требуется по ресурсу на текущем этапе
+    int RequiredAmountFor(ResourceDef res)
+    {
+        if (Stage == null || res == null || Stage.Requirements == null) return 0;
+        var req = Stage.Requirements.FirstOrDefault(r => r.Resource == res);
+        return req != null ? req.Amount : 0;
+    }
+
+    // Карта дефицита на тик
     Dictionary<ResourceDef, int> _need = new();
 
     void RecomputeNeeds()
     {
         _need.Clear();
-        if (Stage == null) return;
+        if (Stage == null || Stage.Requirements == null) return;
 
         foreach (var req in Stage.Requirements)
         {
-            int haveOnSite = Buffer.Get(req.Resource);
-            int required = req.Amount;
-            int lack = Mathf.Max(0, required - haveOnSite);
+            if (req?.Resource == null) continue;
+            int lack = GetDeficit(req.Resource);   // учитываем буфер + в пути
             _need[req.Resource] = lack;
         }
+
+        // Блокировка по ресурсам для UI/диспетчера
+        bool allOkFlow = Stage.Mode == BuildMode.Flow
+            ? Stage.Requirements.All(r => Buffer.Get(r.Resource) > 0)
+            : true;
+
+        bool fullSetBatch = Stage.Mode == BuildMode.Batch
+            ? Stage.Requirements.All(r => Buffer.Get(r.Resource) >= r.Amount)
+            : true;
+
+        IsBlockedByLack = !( (Stage.Mode == BuildMode.Flow && allOkFlow) || (Stage.Mode == BuildMode.Batch && fullSetBatch) );
     }
 
     void TryDispatchJobs()
     {
         if (Stage == null) return;
 
+        // Доставки по актуальному дефициту
         foreach (var kvp in _need)
         {
             var res = kvp.Key;
             int lack = kvp.Value;
             if (lack > 0)
-            {
                 JobManager.Instance.EnsureHaulJob(this, res, lack, chunk: 15);
-            }
             else
-            {
                 JobManager.Instance.RemoveHaulJob(this, res);
-            }
         }
 
+        // Строительная задача
         if (CanBuildNow()) JobManager.Instance.EnsureBuildJob(this);
-        else JobManager.Instance.RemoveBuildJob(this);
+        else               JobManager.Instance.RemoveBuildJob(this);
     }
 
     public bool CanBuildNow()
     {
         if (IsPaused || Stage == null) return false;
 
+        // Flow: на площадке должен быть хотя бы 1 ед. каждого требуемого ресурса
         bool allRequirementsOk =
+            Stage.Requirements != null &&
             Stage.Requirements.All(r => Buffer.Get(r.Resource) > 0);
 
+        // Batch: на площадке должен быть полный комплект по количеству
         bool fullSet =
+            Stage.Requirements != null &&
             Stage.Requirements.All(r => Buffer.Get(r.Resource) >= r.Amount);
 
         bool can =
-            (Stage.Mode == BuildMode.Flow && allRequirementsOk) ||
+            (Stage.Mode == BuildMode.Flow  && allRequirementsOk) ||
             (Stage.Mode == BuildMode.Batch && fullSet);
 
         IsBlockedByLack = !can;
@@ -118,8 +158,6 @@ public class BuildSite : MonoBehaviour
         OnUIChanged?.Invoke();
     }
 
-    public int ActiveWorkersCount = 0;
-
     void TryBuildTick(float dt)
     {
         if (!CanBuildNow() || ActiveWorkersCount <= 0) return;
@@ -129,20 +167,23 @@ public class BuildSite : MonoBehaviour
 
         if (Stage.Mode == BuildMode.Flow)
         {
+            // каждый тик тратим по 1 ед. каждого ресурса, только если все присутствуют
             foreach (var req in Stage.Requirements)
-            {
-                if (Buffer.Get(req.Resource) <= 0)
-                    return;
-            }
-            foreach (var req in Stage.Requirements) Buffer.Remove(req.Resource, 1);
+                if (Buffer.Get(req.Resource) <= 0) return;
+
+            foreach (var req in Stage.Requirements)
+                Buffer.Remove(req.Resource, 1);
         }
-        else
+        else // Batch
         {
+            // пропорционально "работе" тратим ресурсы, но не больше наличия
             foreach (var req in Stage.Requirements)
             {
-                float perSec = req.Amount / Mathf.Max(1f, Stage.WorkAmount / (ActiveWorkersCount * BaseBuildSpeedPerWorker));
+                // Сколько “единиц” ресурса нужно в секунду, если весь WorkAmount делается ActiveWorkersCount'ом за Stage.WorkAmount/скорость
+                float denom = Mathf.Max(1f, Stage.WorkAmount / (ActiveWorkersCount * BaseBuildSpeedPerWorker));
+                float perSec = req.Amount / denom;
                 int toRemove = Mathf.Clamp(Mathf.CeilToInt(perSec * dt), 0, Buffer.Get(req.Resource));
-                Buffer.Remove(req.Resource, toRemove);
+                if (toRemove > 0) Buffer.Remove(req.Resource, toRemove);
             }
         }
 
@@ -150,9 +191,7 @@ public class BuildSite : MonoBehaviour
         OnStageProgressChanged?.Invoke(StageProgress);
 
         if (StageProgress >= (Stage?.WorkAmount ?? 0f))
-        {
             CompleteStage();
-        }
     }
 
     void CompleteStage()
@@ -163,8 +202,11 @@ public class BuildSite : MonoBehaviour
 
         if (Stage == null)
         {
+            // стройка завершена
             JobManager.Instance.RemoveBuildJob(this);
+            // снимем все оставшиеся доставки
             foreach (var res in _need.Keys) JobManager.Instance.RemoveHaulJob(this, res);
+            _need.Clear();
             return;
         }
 
@@ -175,10 +217,15 @@ public class BuildSite : MonoBehaviour
         }
     }
 
-    public IEnumerable<(ResourceDef res, int required, int onSite)> GetStageResourceInfo()
+    // Для UI панели: сколько нужно, сколько на площадке (буфер)
+    public IEnumerable<(ResourceDef res, int required, int onSite, int inTransit)> GetStageResourceInfo()
     {
         if (Stage == null) yield break;
         foreach (var req in Stage.Requirements)
-            yield return (req.Resource, req.Amount, Buffer.Get(req.Resource));
+        {
+            int onSite = Buffer.Get(req.Resource);
+            int inTransit = JobManager.Instance ? JobManager.Instance.GetInTransit(this, req.Resource) : 0;
+            yield return (req.Resource, req.Amount, onSite, inTransit);
+        }
     }
 }
