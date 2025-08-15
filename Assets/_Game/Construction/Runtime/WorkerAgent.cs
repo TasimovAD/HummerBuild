@@ -88,19 +88,8 @@ public class WorkerAgent : MonoBehaviour
                 _carryingRes = _haul.Resource;
                 _carryingAmount = 0;
 
-                // — идём к складу (слоты/оффсет) —
-                var loadSlots = _site.Storage.GetComponent<SlotPoints>();
-                if (loadSlots && loadSlots.TryAcquire(out var loadSlot))
-                {
-                    yield return MoveTo(loadSlot.position);
-                    loadSlots.Release(loadSlot);
-                }
-                else
-                {
-                    Vector3 basePos = _site.Storage.transform.position;
-                    Vector3 p = basePos + Random.insideUnitSphere * 1.5f; p.y = basePos.y;
-                    yield return MoveTo(p);
-                }
+                // — идём к складу через PickupPoints —
+                yield return MoveViaPickupPoints(_site.Storage.gameObject);
 
                 // забираем
                 int taken = SafeRemove(_site.Storage, _carryingRes, chunk);
@@ -115,46 +104,21 @@ public class WorkerAgent : MonoBehaviour
                 _carryingAmount = taken;
                 AttachCarryProp(_carryingRes);
 
-                // — везём на площадку (слоты/оффсет) —
-                var unloadSlots = _site.GetComponent<SlotPoints>();
-                if (unloadSlots && unloadSlots.TryAcquire(out var dropSlot))
+                // — везём на стройку через её PickupPoints —
+                yield return MoveViaPickupPoints(_site.gameObject);
+
+                // кап на выгрузке по дефициту
+                int deliverCap = _site.GetDeficit(_carryingRes);
+                if (deliverCap > 0)
                 {
-                    yield return MoveTo(dropSlot.position);
-
-                    // кап на выгрузке по дефициту
-                    int deliverCap = _site.GetDeficit(_carryingRes);
-                    if (deliverCap > 0)
-                    {
-                        int toDrop = Mathf.Min(_carryingAmount, deliverCap);
-                        int delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
-                        _carryingAmount -= delivered;
-                        _haul.CompleteChunk(delivered);
-                    }
-                    else
-                    {
-                        _haul.CompleteChunk(0);
-                    }
-
-                    unloadSlots.Release(dropSlot);
+                    int toDrop = Mathf.Min(_carryingAmount, deliverCap);
+                    int delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
+                    _carryingAmount -= delivered;
+                    _haul.CompleteChunk(delivered);
                 }
                 else
                 {
-                    Vector3 basePos = _site.transform.position;
-                    Vector3 p = basePos + Random.insideUnitSphere * 1.5f; p.y = basePos.y;
-                    yield return MoveTo(p);
-
-                    int deliverCap = _site.GetDeficit(_carryingRes);
-                    if (deliverCap > 0)
-                    {
-                        int toDrop = Mathf.Min(_carryingAmount, deliverCap);
-                        int delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
-                        _carryingAmount -= delivered;
-                        _haul.CompleteChunk(delivered);
-                    }
-                    else
-                    {
-                        _haul.CompleteChunk(0);
-                    }
+                    _haul.CompleteChunk(0);
                 }
 
                 // очистка
@@ -172,7 +136,7 @@ public class WorkerAgent : MonoBehaviour
                 _site.ActiveWorkersCount++;
                 while (_site != null && _site.CanBuildNow())
                 {
-                    // если нужна “работа” от рабочего — добавь сюда начисление
+                    // при желании – начисление “труда”:
                     // _site.AddBuildContribution(BuildSpeedFactor);
                     yield return new WaitForSeconds(0.5f);
                 }
@@ -183,6 +147,23 @@ public class WorkerAgent : MonoBehaviour
 
             // 3) Idle
             yield return new WaitForSeconds(0.25f);
+        }
+    }
+
+    /// Движение к ближайшей доступной точке из PickupPoints на целевом объекте (или фолбэк-оффсет).
+    IEnumerator MoveViaPickupPoints(GameObject target)
+    {
+        var pp = target ? target.GetComponent<PickupPoints>() : null;
+        if (pp && pp.TryAcquire(out var slot))
+        {
+            yield return MoveTo(slot.position);
+            pp.Release(slot);
+        }
+        else
+        {
+            Vector3 basePos = target ? target.transform.position : transform.position;
+            Vector3 p = basePos + Random.insideUnitSphere * 1.5f; p.y = basePos.y;
+            yield return MoveTo(p);
         }
     }
 

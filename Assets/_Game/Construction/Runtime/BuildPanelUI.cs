@@ -1,32 +1,25 @@
-// Assets/_HummerBuild/Construction/UI/BuildPanelUI.cs
+// Assets/_Game/Construction/Runtime/BuildPanelUI.cs
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using System.Linq;
 
 public class BuildPanelUI : MonoBehaviour
 {
+    [Header("Target")]
     public BuildSite Target;
 
-    [Header("Верх")]
-    public TMP_Text TitleText;
-    public TMP_Text StageText;
-    public Slider StageProgressSlider;
-
-    [Header("Список ресурсов")]
+    [Header("UI")]
     public Transform ResourceListRoot;
-    public GameObject ResourceRowPrefab; // элемент списка: иконка, названия, бары
-
-    [Header("Кнопки")]
-    public Toggle FlowModeToggle;
-    public Button PauseButton;
+    public GameObject ResourceRowPrefab; // префаб со скриптом ResourceRowUI
+    public Slider ProgressBar;
+    public TMP_Text StageTitle;
 
     void OnEnable()
     {
         if (Target != null)
         {
             Target.OnUIChanged += Refresh;
-            Target.OnStageProgressChanged += OnProgress;
+            Target.OnStageProgressChanged += OnProgressChanged;
         }
         Refresh();
     }
@@ -36,56 +29,65 @@ public class BuildPanelUI : MonoBehaviour
         if (Target != null)
         {
             Target.OnUIChanged -= Refresh;
-            Target.OnStageProgressChanged -= OnProgress;
+            Target.OnStageProgressChanged -= OnProgressChanged;
         }
     }
 
-    void OnProgress(float v)
+    void OnProgressChanged(float v)
     {
-        var st = GetStage();
-        if (st != null) StageProgressSlider.value = Mathf.Clamp01(v / Mathf.Max(1f, st.WorkAmount));
-    }
+        if (ProgressBar != null && Target != null && Target.Plan != null)
+        {
+            var stage = (Target.CurrentStageIndex < Target.Plan.Stages.Count)
+                ? Target.Plan.Stages[Target.CurrentStageIndex]
+                : null;
 
-    ConstructionStage GetStage() => Target == null ? null : (Target.Plan != null && Target.CurrentStageIndex < Target.Plan.Stages.Count ? Target.Plan.Stages[Target.CurrentStageIndex] : null);
+            float work = (stage != null) ? Mathf.Max(0.0001f, stage.WorkAmount) : 1f;
+            ProgressBar.value = Mathf.Clamp01(v / work);
+        }
+    }
 
     public void Refresh()
     {
         if (!Target) return;
 
-        var st = GetStage();
-        TitleText.text = Target.Plan ? Target.Plan.PlanId : "Объект";
-        StageText.text = st ? $"{st.Title}" : "Готово";
-
-        if (FlowModeToggle) FlowModeToggle.isOn = (st && st.Mode == BuildMode.Flow);
-
-        // Пересобираем список ресурсов
-        foreach (Transform c in ResourceListRoot) Destroy(c.gameObject);
-        if (st)
+        // Заголовок — используем Title из ConstructionStage
+        if (StageTitle)
         {
-            foreach (var (res, required, onSite, _) in Target.GetStageResourceInfo())
-            {
-                var go = Instantiate(ResourceRowPrefab, ResourceListRoot);
-                var row = go.GetComponent<ResourceRowUI>();
-                row.Bind(res, required, onSite);
-            }
+            var stage = (Target.Plan && Target.CurrentStageIndex < Target.Plan.Stages.Count)
+                ? Target.Plan.Stages[Target.CurrentStageIndex]
+                : null;
+            StageTitle.text = stage ? stage.Title : "Завершено";
         }
 
-        // Прогресс
-        OnProgress(Target.StageProgress);
+        // Очистить список ресурсов
+        if (ResourceListRoot)
+        {
+            for (int i = ResourceListRoot.childCount - 1; i >= 0; i--)
+                Destroy(ResourceListRoot.GetChild(i).gameObject);
+        }
+
+        // Заполнить ресурсами (берём строки для UI, которые не убывают в Batch)
+        foreach (var rowData in Target.GetStageUIRows())
+        {
+            var go = Instantiate(ResourceRowPrefab, ResourceListRoot);
+            var row = go.GetComponent<ResourceRowUI>();
+
+            // Если у тебя Bind(res, required, current) — передаём deliveredUI
+            row.Bind(rowData.res, rowData.required, rowData.deliveredUI);
+
+            // Если у тебя есть перегрузка с "в пути", можно вместо этого:
+            // row.Bind(rowData.res, rowData.required, rowData.deliveredUI, rowData.inTransit);
+        }
+
+        // Обновить прогресс
+        OnProgressChanged(Target.StageProgress);
     }
 
-    // UI callbacks
-    public void OnFlowModeChanged(bool isFlow)
+    // Кнопка из UI (опционально)
+    public void TogglePause()
     {
-        var st = GetStage();
-        if (st == null) return;
-        st.Mode = isFlow ? BuildMode.Flow : BuildMode.Batch; // если хочешь — делай копию Stage на runtime
-        Target?.GetType().GetMethod("RecomputeNeeds", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)?.Invoke(Target, null);
-    }
-
-    public void OnPauseClicked()
-    {
-        Target?.Pause(!Target.IsPaused);
-        PauseButton.GetComponentInChildren<TMP_Text>().text = Target.IsPaused ? "Продолжить" : "Пауза";
+        if (!Target) return;
+        Target.Pause(!Target.IsPaused);
+        Refresh();
     }
 }

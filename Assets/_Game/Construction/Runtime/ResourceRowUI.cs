@@ -1,18 +1,24 @@
-// Assets/_HummerBuild/Construction/UI/ResourceRowUI.cs
+// Assets/_Game/Construction/Runtime/ResourceRowUI.cs
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine.UI;
 
 public class ResourceRowUI : MonoBehaviour
 {
-    public Image Icon;
     public TMP_Text NameText;
-    public TMP_Text CountersText; // формат: "На площадке X / Нужно Y"
+    public TMP_Text CountText;     // формат: "доставлено/нужно (в пути X)"
+    public Image Icon;             // опционально
 
-    public void Bind(ResourceDef res, int required, int onSite)
+    public void Bind(ResourceDef res, int required, int deliveredUI, int inTransit = 0)
     {
-        if (Icon) Icon.sprite = res.Icon;
-        if (NameText) NameText.text = res.DisplayName;
-        if (CountersText) CountersText.text = $"На площадке {onSite} / Нужно {required}";
+        if (NameText)  NameText.text = res ? res.DisplayName : "—";
+        if (CountText)
+        {
+            if (inTransit > 0)
+                CountText.text = $"{deliveredUI}/{required}  (в пути {inTransit})";
+            else
+                CountText.text = $"{deliveredUI}/{required}";
+        }
+        if (Icon && res && res.Icon) Icon.sprite = res.Icon;
     }
 }

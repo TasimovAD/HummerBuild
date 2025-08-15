@@ -446,6 +446,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 598d167f4f2ca4581960acb7307d9617, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Icon: {fileID: 1838377482696633122}
   NameText: {fileID: 4743748907668595154}
-  CountersText: {fileID: 4750172359189071244}
+  CountText: {fileID: 4750172359189071244}
+  Icon: {fileID: 1838377482696633122}
