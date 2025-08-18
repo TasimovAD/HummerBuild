@@ -15,5 +15,5 @@ MonoBehaviour:
   Id: stone
   DisplayName: Stone
   Icon: {fileID: 0}
-  CarryProp: {fileID: 0}
+  CarryProp: {fileID: 8330445290505275631, guid: a8b685ac546344bbd900c8d7980330c3, type: 3}
   UnitMass: 1

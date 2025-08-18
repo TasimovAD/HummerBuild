@@ -15,7 +15,7 @@ MonoBehaviour:
   Id: foundation
   Title: Foundation
   Mode: 0
-  WorkAmount: 50
+  WorkAmount: 200
   TimeMultiplier: 1
   Requirements:
   - Resource: {fileID: 11400000, guid: 6517d5039d8754b27b64f0b5abd25b84, type: 2}

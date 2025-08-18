@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: finish
   Title: Finish
-  Mode: 1
-  WorkAmount: 120
+  Mode: 0
+  WorkAmount: 500
   TimeMultiplier: 1
   Requirements:
   - Resource: {fileID: 11400000, guid: 36bcf7e751170496ab702126b904192f, type: 2}

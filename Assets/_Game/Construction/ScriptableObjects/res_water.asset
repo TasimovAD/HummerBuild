@@ -15,5 +15,5 @@ MonoBehaviour:
   Id: water
   DisplayName: Water
   Icon: {fileID: 0}
-  CarryProp: {fileID: 0}
+  CarryProp: {fileID: 77405805825056359, guid: e5d3b2da98e124a17a7df7d5a65f1e41, type: 3}
   UnitMass: 1

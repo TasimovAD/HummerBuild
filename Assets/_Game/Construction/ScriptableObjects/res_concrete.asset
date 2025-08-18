@@ -15,5 +15,5 @@ MonoBehaviour:
   Id: concrete
   DisplayName: Concrete
   Icon: {fileID: 0}
-  CarryProp: {fileID: 0}
+  CarryProp: {fileID: 8931963708877791020, guid: 8fe6d420381d948e2bca686fb0093cef, type: 3}
   UnitMass: 1

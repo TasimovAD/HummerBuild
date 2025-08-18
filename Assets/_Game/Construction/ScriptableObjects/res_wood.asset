@@ -15,5 +15,5 @@ MonoBehaviour:
   Id: wood
   DisplayName: Wood
   Icon: {fileID: 0}
-  CarryProp: {fileID: 0}
+  CarryProp: {fileID: 5885690783159889269, guid: 446b7489ea1da44a985c42cfcb80b457, type: 3}
   UnitMass: 1

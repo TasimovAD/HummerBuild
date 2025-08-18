@@ -25,6 +25,27 @@ public class WorkerAgent : MonoBehaviour
     int _carryingAmount;
     GameObject _carryPropInstance;
 
+
+public StorageResourcePropSpawner propSpawner;
+public Transform handSocket;
+
+GameObject carriedProp;
+
+void PickupProp(ResourceDef res) {
+    if (carriedProp) return;
+    var go = propSpawner.TakeProp(res);
+    if (!go) return;
+    carriedProp = go;
+    go.transform.SetParent(handSocket);
+    go.transform.localPosition = Vector3.zero;
+    go.transform.localRotation = Quaternion.identity;
+    var rb = go.GetComponent<Rigidbody>();
+    if (rb) Destroy(rb);
+    var col = go.GetComponent<Collider>();
+    if (col) Destroy(col);
+}
+
+
     void Awake()
     {
         if (!Agent) Agent = GetComponent<NavMeshAgent>();
