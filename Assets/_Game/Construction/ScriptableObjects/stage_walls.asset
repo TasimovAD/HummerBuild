@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: wals
   Title: Wals
-  Mode: 1
-  WorkAmount: 180
+  Mode: 0
+  WorkAmount: 100
   TimeMultiplier: 1
   Requirements:
   - Resource: {fileID: 11400000, guid: 6517d5039d8754b27b64f0b5abd25b84, type: 2}

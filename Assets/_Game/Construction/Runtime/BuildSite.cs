@@ -21,6 +21,30 @@ public class BuildSite : MonoBehaviour
     [Header("Скорость строительства")]
     public float BaseBuildSpeedPerWorker = 1f;
 
+    [Header("Ограничение строителей")]
+    public int BuilderSlots = 8; // сколько рабочих одновременно могут строить
+
+    public bool HasFreeBuilderSlot()
+{
+    return ActiveWorkersCount < Mathf.Max(1, BuilderSlots);
+}
+
+
+#if UNITY_EDITOR
+[ContextMenu("DEBUG/Print State")]
+void __DBG_Print()
+{
+    var st = (Plan && CurrentStageIndex < Plan.Stages.Count) ? Plan.Stages[CurrentStageIndex] : null;
+    bool can = CanBuildNow();
+    Debug.Log($"[BuildSite:{name}] stage={(st? st.Title : "none")} mode={(st? st.Mode.ToString() : "-")} " +
+              $"locked={IsReserveLocked} can={can} workers={ActiveWorkersCount}");
+}
+#endif
+
+
+
+
+
     // Runtime
     public float StageProgress { get; private set; }
     public bool IsPaused { get; private set; }
@@ -31,10 +55,8 @@ public class BuildSite : MonoBehaviour
     public event Action<float> OnStageProgressChanged;
 
     // Текущий этап
-    ConstructionStage Stage => (Plan != null && Plan.Stages != null &&
-                                CurrentStageIndex >= 0 && CurrentStageIndex < Plan.Stages.Count)
-        ? Plan.Stages[CurrentStageIndex]
-        : null;
+    public ConstructionStage Stage => (Plan != null && CurrentStageIndex < Plan.Stages.Count) ? Plan.Stages[CurrentStageIndex] : null;
+
 
     // === РЕЗЕРВ ДЛЯ ЭТАПА ===
     readonly Dictionary<ResourceDef, int> _reserved = new();   // забронировано на этап
@@ -78,13 +100,21 @@ public class BuildSite : MonoBehaviour
         RecomputeNeeds();
 
         // ▶ РАННЯЯ БРОНЬ ДЛЯ BATCH: как только полный комплект собран (buffer+reserved)
-        if (Stage != null && Stage.Mode == BuildMode.Batch && !_reserveLocked && IsFullSetOnSiteOrReserved())
-        {
-            LockFromBufferToReserve();   // уводим комплект в резерв
-            _reserveLocked = true;
-            OnUIChanged?.Invoke();
-            RecomputeNeeds();            // после брони дефицит должен стать 0
-        }
+       if (Stage != null && Stage.Mode == BuildMode.Batch && !_reserveLocked && IsFullSetOnSiteOrReserved())
+{
+    LockFromBufferToReserve();
+    _reserveLocked = true;
+    OnUIChanged?.Invoke();
+
+    // Сразу чистим доставку по всем ресурсам этого этапа
+    if (JobManager.Instance != null && Stage.Requirements != null)
+    {
+        foreach (var req in Stage.Requirements)
+            JobManager.Instance.RemoveHaulJob(this, req.Resource);
+    }
+
+    RecomputeNeeds(); // дефицит станет 0
+}
 
         TryDispatchJobs();
         TryBuildTick(0.5f);
@@ -114,6 +144,17 @@ public class BuildSite : MonoBehaviour
 
         return Mathf.Max(0, required - reserved - inBuffer - inTransit);
     }
+
+    public int GetDropCap(ResourceDef res)
+{
+    if (Stage == null || res == null) return 0;
+    int required = RequiredAmountFor(res);
+    int reserved = _reserved.TryGetValue(res, out var rsv) ? rsv : 0;
+    int inBuffer = Buffer ? Buffer.Get(res) : 0;
+    // ВАЖНО: без inTransit — иначе свой же груз блокирует сдачу
+    return Mathf.Max(0, required - reserved - inBuffer);
+}
+
 
     void RecomputeNeeds()
     {
@@ -184,34 +225,22 @@ public class BuildSite : MonoBehaviour
     }
 
     public bool CanBuildNow()
-    {
-        if (IsPaused || Stage == null) return false;
+{
+    if (IsPaused || Stage == null) return false;
 
-        bool allRequirementsOk =
-            Stage.Requirements != null &&
-            Stage.Requirements.All(r =>
-            {
-                int buf = Buffer.Get(r.Resource);
-                int rsv = _reserved.TryGetValue(r.Resource, out var v) ? v : 0;
-                return (buf + rsv) > 0;
-            });
+    bool flowOk = Stage.Requirements != null &&
+        Stage.Requirements.All(r => (Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v1) ? v1 : 0)) > 0);
 
-        bool fullSet =
-            Stage.Requirements != null &&
-            Stage.Requirements.All(r =>
-            {
-                int buf = Buffer.Get(r.Resource);
-                int rsv = _reserved.TryGetValue(r.Resource, out var v) ? v : 0;
-                return (buf + rsv) >= r.Amount;
-            });
+    bool fullSet = Stage.Requirements != null &&
+        Stage.Requirements.All(r => (Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v2) ? v2 : 0)) >= r.Amount);
 
-        bool can =
-            (Stage.Mode == BuildMode.Flow  && allRequirementsOk) ||
-            (Stage.Mode == BuildMode.Batch && fullSet);
+    bool can = (Stage.Mode == BuildMode.Flow  && flowOk) ||
+               (Stage.Mode == BuildMode.Batch && (_reserveLocked || fullSet)); // ← эта строка ключевая
 
-        IsBlockedByLack = !can;
-        return can;
-    }
+    IsBlockedByLack = !can;
+    return can;
+}
+
 
     // ======= СТРОИТЕЛЬНЫЙ ТИК =======
 

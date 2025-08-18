@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: roof
   Title: Roof
-  Mode: 1
-  WorkAmount: 120
+  Mode: 0
+  WorkAmount: 100
   TimeMultiplier: 1
   Requirements:
   - Resource: {fileID: 11400000, guid: 47856579e5855496fbf6a529f1ee1463, type: 2}

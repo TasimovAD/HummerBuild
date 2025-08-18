@@ -1,4 +1,3 @@
-// Assets/_Game/Construction/Runtime/WorkerAgent.cs
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
@@ -20,8 +19,8 @@ public class WorkerAgent : MonoBehaviour
 
     // Runtime
     BuildSite _site;
-    HaulJob _haul;
-    BuildJob _build;
+    JobManager.HaulJob _haul;
+    JobManager.BuildJob _build;
     ResourceDef _carryingRes;
     int _carryingAmount;
     GameObject _carryPropInstance;
@@ -42,26 +41,73 @@ public class WorkerAgent : MonoBehaviour
 
     IEnumerator MainLoop()
     {
-        // ждём JobManager
-        float waited = 0f;
-        while (JobManager.Instance == null && waited < 5f)
+        // ЖДЁМ/ИЩЕМ JobManager
+    float timeout = 15f; // ждём до 15 сек (можно меньше/больше)
+    float t = 0f;
+
+    while (JobManager.Instance == null && t < timeout)
+    {
+        // попробуем найти вручную в сцене
+        var found = FindObjectOfType<JobManager>();
+        if (found != null)
         {
-            var found = FindObjectOfType<JobManager>();
-            if (found != null) { var _ = JobManager.Instance; break; }
-            waited += Time.unscaledDeltaTime;
-            yield return null;
-        }
-        if (JobManager.Instance == null)
-        {
-            var all = Resources.FindObjectsOfTypeAll<JobManager>();
-            Debug.LogError($"[WorkerAgent] JobManager.Instance == null после ожидания {waited:F2}s. Found={all.Length}. Scene='{gameObject.scene.name}', Worker='{name}'", this);
+            // Awake у него уже проставит Instance
+            var _ = JobManager.Instance;
+            break;
         }
 
-        for (;;)
+        // на крайний случай: создадим пустой менеджер динамически (если забыли добавить на сцену)
+        if (t > 2f && JobManager.Instance == null && found == null)
         {
-            if (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); continue; }
+            var go = new GameObject("Systems(JobManager_Auto)");
+            go.AddComponent<JobManager>();
+            // после этого Awake выставит Instance и DontDestroyOnLoad
+        }
 
-            // 1) Доставка
+        t += Time.unscaledDeltaTime;
+        yield return null;
+    }
+
+    if (JobManager.Instance == null)
+    {
+        Debug.LogError($"[WorkerAgent] Не удалось получить JobManager.Instance за {timeout:F1}s. Worker='{name}'", this);
+        // мягкий ретрай без спама
+        while (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); }
+    }
+
+    // --- основной цикл как был ---
+    for (;;)
+    {
+        if (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); continue; }
+
+        // далее ваш приоритет Build → Haul → Build (как мы делали)
+
+            // ========= ПРИОРИТЕТ: СНАЧАЛА СТРОЙКА (если есть где строить) =========
+            bool buildFirst = true; // по умолчанию — отдаём приоритет стройке
+            try { buildFirst = JobManager.Instance.HasReadyBuildSites(); } catch { /* на всякий */ }
+
+            if (buildFirst)
+            {
+                if (JobManager.Instance.TryGetBuildJob(this, out _build) && _build != null)
+                {
+                    _site = _build.Site;
+                    if (_site != null)
+                    {
+                        _site.ActiveWorkersCount++;
+                        while (_site != null && _site.CanBuildNow())
+                        {
+                            // при желании: вклад от конкретного рабочего
+                            // _site.AddBuildContribution(BuildSpeedFactor);
+                            yield return new WaitForSeconds(0.5f);
+                        }
+                        _site.ActiveWorkersCount = Mathf.Max(0, _site.ActiveWorkersCount - 1);
+                        _build = null;
+                        continue;
+                    }
+                }
+            }
+
+            // ========= ЕСЛИ СТРОИТЬ НЕГДЕ — ПРОБУЕМ ДОСТАВКУ =========
             if (JobManager.Instance.TryGetNextHaulJob(this, out _haul))
             {
                 if (_haul == null) { yield return new WaitForSeconds(0.2f); continue; }
@@ -77,7 +123,7 @@ public class WorkerAgent : MonoBehaviour
                 float unitMass = Mathf.Max(0.01f, _haul.Resource.UnitMass);
                 int capacityByMass = Mathf.Max(1, Mathf.FloorToInt(CarryCapacityKg / unitMass));
 
-                // кап по дефициту
+                // кап по дефициту (на момент резервирования)
                 int deficit = _site.GetDeficit(_haul.Resource);
                 if (deficit <= 0) { _haul.CompleteChunk(0); yield return null; continue; }
 
@@ -91,7 +137,7 @@ public class WorkerAgent : MonoBehaviour
                 // — идём к складу через PickupPoints —
                 yield return MoveViaPickupPoints(_site.Storage.gameObject);
 
-                // забираем
+                // забираем (может оказаться меньше, чем зарезервировано)
                 int taken = SafeRemove(_site.Storage, _carryingRes, chunk);
                 if (taken <= 0)
                 {
@@ -107,50 +153,60 @@ public class WorkerAgent : MonoBehaviour
                 // — везём на стройку через её PickupPoints —
                 yield return MoveViaPickupPoints(_site.gameObject);
 
-                // кап на выгрузке по дефициту
-                int deliverCap = _site.GetDeficit(_carryingRes);
+                // кап на выгрузке (БЕЗ учёта inTransit)
+                int deliverCap = _site.GetDropCap(_carryingRes);
+                int delivered = 0;
+
                 if (deliverCap > 0)
                 {
                     int toDrop = Mathf.Min(_carryingAmount, deliverCap);
-                    int delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
+                    delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
                     _carryingAmount -= delivered;
-                    _haul.CompleteChunk(delivered);
                 }
-                else
+
+                // фикс реальной доставки
+                _haul.CompleteChunk(delivered);
+
+                // если остался хвост — возвращаем на склад и снимаем зависший inTransit
+                if (_carryingAmount > 0)
                 {
-                    _haul.CompleteChunk(0);
+                    int returned = SafeAdd(_site.Storage, _carryingRes, _carryingAmount);
+                    if (returned > 0)
+                    {
+                        _haul.CancelInTransit(returned);
+                        _carryingAmount -= returned;
+                    }
                 }
 
                 // очистка
                 _carryingAmount = 0;
                 ClearCarry();
-                continue;
-            }
 
-            // 2) Стройка
-            if (JobManager.Instance.TryGetBuildJob(this, out _build) && _build != null)
-            {
-                _site = _build.Site;
-                if (_site == null) { yield return new WaitForSeconds(0.2f); continue; }
-
-                _site.ActiveWorkersCount++;
-                while (_site != null && _site.CanBuildNow())
+                // после доставки попробуем ещё раз строить (вдруг уже есть слот/готовность)
+                if (JobManager.Instance.TryGetBuildJob(this, out _build) && _build != null)
                 {
-                    // при желании – начисление “труда”:
-                    // _site.AddBuildContribution(BuildSpeedFactor);
-                    yield return new WaitForSeconds(0.5f);
+                    _site = _build.Site;
+                    if (_site != null)
+                    {
+                        _site.ActiveWorkersCount++;
+                        while (_site != null && _site.CanBuildNow())
+                            yield return new WaitForSeconds(0.5f);
+                        _site.ActiveWorkersCount = Mathf.Max(0, _site.ActiveWorkersCount - 1);
+                        _build = null;
+                        continue;
+                    }
                 }
-                _site.ActiveWorkersCount = Mathf.Max(0, _site.ActiveWorkersCount - 1);
-                _build = null;
+
                 continue;
             }
 
-            // 3) Idle
+            // ========= НИЧЕГО НЕ НАШЛОСЬ — КОРОТКИЙ IDLE =========
             yield return new WaitForSeconds(0.25f);
         }
     }
 
-    /// Движение к ближайшей доступной точке из PickupPoints на целевом объекте (или фолбэк-оффсет).
+    // ---------- ДВИЖЕНИЕ / ВСПОМОГАТЕЛЬНЫЕ ----------
+
     IEnumerator MoveViaPickupPoints(GameObject target)
     {
         var pp = target ? target.GetComponent<PickupPoints>() : null;
