@@ -26,14 +26,14 @@ public class WorkerAgent : MonoBehaviour
     GameObject _carryPropInstance;
 
 
-public StorageResourcePropSpawner propSpawner;
+public PalletGroupManager palletGroup;
 public Transform handSocket;
 
 GameObject carriedProp;
 
 void PickupProp(ResourceDef res) {
     if (carriedProp) return;
-    var go = propSpawner.TakeProp(res);
+    var go = palletGroup.Take(res);
     if (!go) return;
     carriedProp = go;
     go.transform.SetParent(handSocket);
@@ -182,6 +182,22 @@ void PickupProp(ResourceDef res) {
                 {
                     int toDrop = Mathf.Min(_carryingAmount, deliverCap);
                     delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
+                    // Визуальный дроп CarryProp на стройке
+                        if (_carryPropInstance && _site.DropRoot && delivered > 0)
+                        {
+                            // открепляем от руки
+                            _carryPropInstance.transform.SetParent(_site.DropRoot);
+                            
+                            // случайное положение в области DropRoot
+                            Vector3 offset = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f));
+                            _carryPropInstance.transform.localPosition = offset;
+
+                            // случайный поворот
+                            _carryPropInstance.transform.localRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+
+                            // сбрасываем ссылку, чтобы не уничтожить в ClearCarry
+                            _carryPropInstance = null;
+                        }
                     _carryingAmount -= delivered;
                 }
 
@@ -277,17 +293,23 @@ void PickupProp(ResourceDef res) {
 
     void AttachCarryProp(ResourceDef res)
     {
-        if (!res || !res.CarryProp || !HandCarrySocket) return;
-        _carryPropInstance = Instantiate(res.CarryProp, HandCarrySocket);
-        _carryPropInstance.transform.localPosition = Vector3.zero;
-        _carryPropInstance.transform.localRotation = Quaternion.identity;
+        _carryPropInstance = palletGroup.Take(res);
+if (!_carryPropInstance) return;
+
+_carryPropInstance.transform.SetParent(HandCarrySocket);
+_carryPropInstance.transform.localPosition = Vector3.zero;
+_carryPropInstance.transform.localRotation = Quaternion.identity;
     }
 
     void ClearCarry()
-    {
-        _carryingRes = null;
-        _carryingAmount = 0;
-        if (_carryPropInstance) Destroy(_carryPropInstance);
-        _carryPropInstance = null;
-    }
+{
+    _carryingRes = null;
+    _carryingAmount = 0;
+
+    // не уничтожаем, если уже передано в DropRoot
+    if (_carryPropInstance && _carryPropInstance.transform.parent == HandCarrySocket)
+        Destroy(_carryPropInstance);
+
+    _carryPropInstance = null;
+}
 }

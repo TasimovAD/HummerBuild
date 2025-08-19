@@ -19,10 +19,10 @@ MonoBehaviour:
   TimeMultiplier: 1
   Requirements:
   - Resource: {fileID: 11400000, guid: 6517d5039d8754b27b64f0b5abd25b84, type: 2}
-    Amount: 10
+    Amount: 20
   - Resource: {fileID: 11400000, guid: 3439182d01ceb4458b13249ebd0bae36, type: 2}
     Amount: 5
   - Resource: {fileID: 11400000, guid: 4f930763202804e3f9035877bf12b9c2, type: 2}
-    Amount: 5
+    Amount: 1
   - Resource: {fileID: 11400000, guid: 47856579e5855496fbf6a529f1ee1463, type: 2}
     Amount: 5

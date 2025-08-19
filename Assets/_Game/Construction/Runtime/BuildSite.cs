@@ -24,6 +24,9 @@ public class BuildSite : MonoBehaviour
     [Header("Ограничение строителей")]
     public int BuilderSlots = 8; // сколько рабочих одновременно могут строить
 
+    public Transform DropRoot;
+
+
     public bool HasFreeBuilderSlot()
 {
     return ActiveWorkersCount < Mathf.Max(1, BuilderSlots);
