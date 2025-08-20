@@ -3,36 +3,49 @@ using System.Collections.Generic;
 
 public class PalletGroupManager : MonoBehaviour
 {
-    public InventoryProviderAdapter inventory;
-    public List<ResourcePallet> pallets;
-
-    void Start()
+    [System.Serializable]
+    public class ResourcePalletBinding
     {
-        if (inventory != null)
-            inventory.OnChanged += RebuildAll;
-
-        RebuildAll();
+        public ResourceDef resource;
+        public ResourcePalletSlots palletSlots;
     }
 
-    void RebuildAll(ResourceDef _) => RebuildAll();
+    public List<ResourcePalletBinding> bindings = new();
 
-    void RebuildAll()
+    public ResourcePalletSlots GetPalletFor(ResourceDef res)
     {
-        foreach (var pallet in pallets)
+        if (!res) return null;
+        foreach (var b in bindings)
         {
-            if (!pallet || pallet.resource == null) continue;
-            int count = inventory.Get(pallet.resource);
-            var prefab = pallet.resource.CarryProp;
-            pallet.Rebuild(count, prefab);
+            if (b.resource == res)
+                return b.palletSlots;
         }
+        return null;
+    }
+
+    public bool TryAddVisual(ResourceDef res, GameObject prefab)
+    {
+        var pallet = GetPalletFor(res);
+        if (pallet == null) return false;
+
+        return pallet.TryAdd(prefab);
     }
 
     public GameObject Take(ResourceDef res)
     {
-        var pallet = pallets.Find(p => p.resource == res);
-        if (!pallet) return null;
+        var pallet = GetPalletFor(res);
+        if (pallet == null) return null;
 
-        inventory.Remove(res, 1); // снимаем 1 из инвентаря
-        return pallet.TakeOne();
+        return pallet.Take();
+    }
+
+    public void ClearAll()
+    {
+        foreach (var b in bindings)
+        {
+            if (b.palletSlots != null)
+                b.palletSlots.ClearAll();
+        }
     }
 }
+

@@ -36,6 +36,12 @@ public class ResourcePallet : MonoBehaviour
         return go;
     }
 
+
+    public void ForceAdd(GameObject go)
+{
+    spawned.Add(go);
+}
+
     public void Clear()
     {
         foreach (var go in spawned)

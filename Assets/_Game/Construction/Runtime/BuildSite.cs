@@ -1,4 +1,3 @@
-// Assets/_Game/Construction/Runtime/BuildSite.cs
 using UnityEngine;
 using System;
 using System.Linq;
@@ -7,12 +6,12 @@ using System.Collections.Generic;
 public class BuildSite : MonoBehaviour
 {
     [Header("План стройки")]
-    public BuildPlan Plan;                  // последовательность этапов
+    public BuildPlan Plan;
     public int CurrentStageIndex = 0;
 
     [Header("Инвентари (через адаптеры)")]
-    public InventoryProviderAdapter Storage;   // главный склад
-    public InventoryProviderAdapter Buffer;    // локальный буфер площадки
+    public InventoryProviderAdapter Storage;
+    public InventoryProviderAdapter Buffer;
 
     [Header("Параметры диспетчера")]
     public int Priority = 0;
@@ -22,67 +21,44 @@ public class BuildSite : MonoBehaviour
     public float BaseBuildSpeedPerWorker = 1f;
 
     [Header("Ограничение строителей")]
-    public int BuilderSlots = 8; // сколько рабочих одновременно могут строить
+    public int BuilderSlots = 8;
 
+    [Header("Визуальные компоненты")]
     public Transform DropRoot;
+    public PalletGroupManager buildPalletGroup;
+    public List<PickupPoints> resourceDropPoints;
 
-
-    public bool HasFreeBuilderSlot()
-{
-    return ActiveWorkersCount < Mathf.Max(1, BuilderSlots);
-}
-
-
-#if UNITY_EDITOR
-[ContextMenu("DEBUG/Print State")]
-void __DBG_Print()
-{
-    var st = (Plan && CurrentStageIndex < Plan.Stages.Count) ? Plan.Stages[CurrentStageIndex] : null;
-    bool can = CanBuildNow();
-    Debug.Log($"[BuildSite:{name}] stage={(st? st.Title : "none")} mode={(st? st.Mode.ToString() : "-")} " +
-              $"locked={IsReserveLocked} can={can} workers={ActiveWorkersCount}");
-}
-#endif
-
-
-
-
-
-    // Runtime
+    // Статус
     public float StageProgress { get; private set; }
     public bool IsPaused { get; private set; }
     public bool IsBlockedByLack { get; private set; }
     public int ActiveWorkersCount = 0;
 
+    public bool HasFreeBuilderSlot() => ActiveWorkersCount < Mathf.Max(1, BuilderSlots);
+    public bool IsReserveLocked => _reserveLocked && Stage?.Mode == BuildMode.Batch;
+
+    public ConstructionStage Stage =>
+        (Plan != null && CurrentStageIndex < Plan.Stages.Count) ? Plan.Stages[CurrentStageIndex] : null;
+
     public event Action OnUIChanged;
     public event Action<float> OnStageProgressChanged;
 
-    // Текущий этап
-    public ConstructionStage Stage => (Plan != null && CurrentStageIndex < Plan.Stages.Count) ? Plan.Stages[CurrentStageIndex] : null;
-
-
-    // === РЕЗЕРВ ДЛЯ ЭТАПА ===
-    readonly Dictionary<ResourceDef, int> _reserved = new();   // забронировано на этап
-    bool _reserveLocked = false;                                // фикс резерва (Batch)
-
-    // Снимок «сколько доставлено» для UI после фиксации (чтобы не убывало)
+    readonly Dictionary<ResourceDef, int> _reserved = new();
     readonly Dictionary<ResourceDef, int> _deliveredUISnapshot = new();
-    public bool IsReserveLocked => _reserveLocked && Stage?.Mode == BuildMode.Batch;
-
-    // Карта дефицита на тик
     Dictionary<ResourceDef, int> _need = new();
+    bool _reserveLocked = false;
 
     void OnEnable()
     {
         if (Storage) Storage.OnChanged += OnInventoryChanged;
-        if (Buffer)  Buffer.OnChanged  += OnInventoryChanged;
+        if (Buffer) Buffer.OnChanged += OnInventoryChanged;
         InvokeRepeating(nameof(TickSite), 0.5f, 0.5f);
     }
 
     void OnDisable()
     {
         if (Storage) Storage.OnChanged -= OnInventoryChanged;
-        if (Buffer)  Buffer.OnChanged  -= OnInventoryChanged;
+        if (Buffer) Buffer.OnChanged -= OnInventoryChanged;
         CancelInvoke(nameof(TickSite));
     }
 
@@ -102,62 +78,46 @@ void __DBG_Print()
     {
         RecomputeNeeds();
 
-        // ▶ РАННЯЯ БРОНЬ ДЛЯ BATCH: как только полный комплект собран (buffer+reserved)
-       if (Stage != null && Stage.Mode == BuildMode.Batch && !_reserveLocked && IsFullSetOnSiteOrReserved())
-{
-    LockFromBufferToReserve();
-    _reserveLocked = true;
-    OnUIChanged?.Invoke();
+        if (Stage != null && Stage.Mode == BuildMode.Batch && !_reserveLocked && IsFullSetOnSiteOrReserved())
+        {
+            LockFromBufferToReserve();
+            _reserveLocked = true;
+            OnUIChanged?.Invoke();
 
-    // Сразу чистим доставку по всем ресурсам этого этапа
-    if (JobManager.Instance != null && Stage.Requirements != null)
-    {
-        foreach (var req in Stage.Requirements)
-            JobManager.Instance.RemoveHaulJob(this, req.Resource);
-    }
+            if (JobManager.Instance != null && Stage.Requirements != null)
+                foreach (var req in Stage.Requirements)
+                    JobManager.Instance.RemoveHaulJob(this, req.Resource);
 
-    RecomputeNeeds(); // дефицит станет 0
-}
+            RecomputeNeeds();
+        }
 
         TryDispatchJobs();
         TryBuildTick(0.5f);
     }
 
-    // ======= ДЕФИЦИТ / ТРЕБОВАНИЯ =======
-
-    int RequiredAmountFor(ResourceDef res)
-    {
-        if (Stage == null || res == null || Stage.Requirements == null) return 0;
-        var req = Stage.Requirements.FirstOrDefault(r => r.Resource == res);
-        return req != null ? req.Amount : 0;
-    }
-
     public int GetDeficit(ResourceDef res)
     {
         if (Stage == null || res == null) return 0;
+        if (_reserveLocked && Stage.Mode == BuildMode.Batch) return 0;
 
-        // Для Batch после фиксации — довозы отключаем
-        if (_reserveLocked && Stage.Mode == BuildMode.Batch)
-            return 0;
-
-        int required  = RequiredAmountFor(res);
-        int reserved  = _reserved.TryGetValue(res, out var rsv) ? rsv : 0;
-        int inBuffer  = Buffer ? Buffer.Get(res) : 0;
+        int required = RequiredAmountFor(res);
+        int reserved = _reserved.TryGetValue(res, out var rsv) ? rsv : 0;
+        int inBuffer = Buffer ? Buffer.Get(res) : 0;
         int inTransit = JobManager.Instance ? JobManager.Instance.GetInTransit(this, res) : 0;
 
         return Mathf.Max(0, required - reserved - inBuffer - inTransit);
     }
 
     public int GetDropCap(ResourceDef res)
-{
-    if (Stage == null || res == null) return 0;
-    int required = RequiredAmountFor(res);
-    int reserved = _reserved.TryGetValue(res, out var rsv) ? rsv : 0;
-    int inBuffer = Buffer ? Buffer.Get(res) : 0;
-    // ВАЖНО: без inTransit — иначе свой же груз блокирует сдачу
-    return Mathf.Max(0, required - reserved - inBuffer);
-}
+    {
+        if (Stage == null || res == null) return 0;
 
+        int required = RequiredAmountFor(res);
+        int reserved = _reserved.TryGetValue(res, out var rsv) ? rsv : 0;
+        int inBuffer = Buffer ? Buffer.Get(res) : 0;
+
+        return Mathf.Max(0, required - reserved - inBuffer);
+    }
 
     void RecomputeNeeds()
     {
@@ -171,92 +131,55 @@ void __DBG_Print()
             _need[req.Resource] = lack;
         }
 
-        // Блокировка/готовность для UI
-        bool allOkFlow = Stage.Mode == BuildMode.Flow
-            ? Stage.Requirements.All(r =>
-            {
-                int buf = Buffer.Get(r.Resource);
-                int rsv = _reserved.TryGetValue(r.Resource, out var v) ? v : 0;
-                return (buf + rsv) > 0;
-            })
-            : true;
+        bool flowOk = Stage.Mode == BuildMode.Flow &&
+                      Stage.Requirements.All(r => Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v) ? v : 0) > 0);
 
-        bool fullSetBatch = Stage.Mode == BuildMode.Batch
-            ? Stage.Requirements.All(r =>
-            {
-                int buf = Buffer.Get(r.Resource);
-                int rsv = _reserved.TryGetValue(r.Resource, out var v) ? v : 0;
-                return (buf + rsv) >= r.Amount;
-            })
-            : true;
+        bool batchOk = Stage.Mode == BuildMode.Batch &&
+                       Stage.Requirements.All(r => Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v) ? v : 0) >= r.Amount);
 
-        IsBlockedByLack = !( (Stage.Mode == BuildMode.Flow  && allOkFlow) ||
-                             (Stage.Mode == BuildMode.Batch && fullSetBatch) );
+        IsBlockedByLack = !((Stage.Mode == BuildMode.Flow && flowOk) || (Stage.Mode == BuildMode.Batch && batchOk));
     }
 
-    // Полный комплект на площадке (буфер + резерв) — для старта Batch
-    bool IsFullSetOnSiteOrReserved()
+    public bool CanBuildNow()
     {
-        if (Stage == null || Stage.Requirements == null) return false;
-        foreach (var req in Stage.Requirements)
-        {
-            int buf = Buffer ? Buffer.Get(req.Resource) : 0;
-            int rsv = _reserved.TryGetValue(req.Resource, out var v) ? v : 0;
-            if (buf + rsv < req.Amount) return false;
-        }
-        return true;
-    }
+        if (IsPaused || Stage == null) return false;
 
-    // ======= ДИСПЕТЧЕР ЗАДАЧ =======
+        bool flowOk = Stage.Mode == BuildMode.Flow &&
+                      Stage.Requirements.All(r => Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v) ? v : 0) > 0);
+
+        bool batchOk = Stage.Mode == BuildMode.Batch &&
+                      (_reserveLocked || Stage.Requirements.All(r => Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v) ? v : 0) >= r.Amount));
+
+        return (Stage.Mode == BuildMode.Flow && flowOk) || (Stage.Mode == BuildMode.Batch && batchOk);
+    }
 
     void TryDispatchJobs()
     {
         if (Stage == null || JobManager.Instance == null) return;
 
-        // Доставки по актуальному дефициту
         foreach (var kvp in _need)
         {
             var res = kvp.Key;
             int lack = kvp.Value;
-            if (lack > 0) JobManager.Instance.EnsureHaulJob(this, res, lack, chunk: 15);
-            else          JobManager.Instance.RemoveHaulJob(this, res);
+
+            if (lack > 0)
+                JobManager.Instance.EnsureHaulJob(this, res, lack, 15);
+            else
+                JobManager.Instance.RemoveHaulJob(this, res);
         }
 
-        // Строительная задача
-        if (CanBuildNow()) JobManager.Instance.EnsureBuildJob(this);
-        else               JobManager.Instance.RemoveBuildJob(this);
+        if (CanBuildNow())
+            JobManager.Instance.EnsureBuildJob(this);
+        else
+            JobManager.Instance.RemoveBuildJob(this);
     }
-
-    public bool CanBuildNow()
-{
-    if (IsPaused || Stage == null) return false;
-
-    bool flowOk = Stage.Requirements != null &&
-        Stage.Requirements.All(r => (Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v1) ? v1 : 0)) > 0);
-
-    bool fullSet = Stage.Requirements != null &&
-        Stage.Requirements.All(r => (Buffer.Get(r.Resource) + (_reserved.TryGetValue(r.Resource, out var v2) ? v2 : 0)) >= r.Amount);
-
-    bool can = (Stage.Mode == BuildMode.Flow  && flowOk) ||
-               (Stage.Mode == BuildMode.Batch && (_reserveLocked || fullSet)); // ← эта строка ключевая
-
-    IsBlockedByLack = !can;
-    return can;
-}
-
-
-    // ======= СТРОИТЕЛЬНЫЙ ТИК =======
 
     void TryBuildTick(float dt)
     {
         if (!CanBuildNow() || ActiveWorkersCount <= 0) return;
 
-        // Flow — можно подливать резерв из буфера;
-        // Batch — после фиксации резерв НЕ пополняем; до фиксации можно добирать до комплекта
         if (Stage.Mode == BuildMode.Flow)
-        {
             TopUpReserveFromBuffer();
-        }
         else if (Stage.Mode == BuildMode.Batch && !_reserveLocked)
         {
             if (IsFullSetOnSiteOrReserved())
@@ -267,25 +190,23 @@ void __DBG_Print()
             }
             else
             {
-                TopUpReserveFromBuffer(); // добираем до комплекта до фиксации
+                TopUpReserveFromBuffer();
             }
         }
 
         float buildPts = ActiveWorkersCount * BaseBuildSpeedPerWorker * dt * (Stage?.TimeMultiplier ?? 1f);
         if (buildPts <= 0) return;
 
-        // Расходуем ИМЕННО резерв (а не буфер)
         if (Stage.Mode == BuildMode.Flow)
         {
             foreach (var req in Stage.Requirements)
-            {
-                int rsv = _reserved.TryGetValue(req.Resource, out var v) ? v : 0;
-                if (rsv <= 0) return; // ждём дозаполнения
-            }
+                if ((_reserved.TryGetValue(req.Resource, out var v) ? v : 0) <= 0)
+                    return;
+
             foreach (var req in Stage.Requirements)
-                _reserved[req.Resource] -= 1;
+                _reserved[req.Resource]--;
         }
-        else // Batch
+        else
         {
             foreach (var req in Stage.Requirements)
             {
@@ -306,7 +227,20 @@ void __DBG_Print()
             CompleteStage();
     }
 
-    // Перенести как можно ближе к требованиям из буфера в резерв + сделать снимок для UI
+    bool IsFullSetOnSiteOrReserved()
+    {
+        if (Stage == null || Stage.Requirements == null) return false;
+
+        foreach (var req in Stage.Requirements)
+        {
+            int buf = Buffer ? Buffer.Get(req.Resource) : 0;
+            int rsv = _reserved.TryGetValue(req.Resource, out var v) ? v : 0;
+            if (buf + rsv < req.Amount) return false;
+        }
+
+        return true;
+    }
+
     void LockFromBufferToReserve()
     {
         if (Stage == null) return;
@@ -314,8 +248,8 @@ void __DBG_Print()
         foreach (var req in Stage.Requirements)
         {
             int required = req.Amount;
-            int already  = _reserved.TryGetValue(req.Resource, out var cur) ? cur : 0;
-            int need     = Mathf.Max(0, required - already);
+            int already = _reserved.TryGetValue(req.Resource, out var cur) ? cur : 0;
+            int need = Mathf.Max(0, required - already);
             if (need <= 0) continue;
 
             int haveBuf = Buffer ? Buffer.Get(req.Resource) : 0;
@@ -327,27 +261,25 @@ void __DBG_Print()
             }
         }
 
-        // === Снимок для UI (после фиксации Batch) ===
         if (Stage.Mode == BuildMode.Batch)
         {
             foreach (var req in Stage.Requirements)
             {
-                int required = req.Amount;
                 int reserved = _reserved.TryGetValue(req.Resource, out var rsv) ? rsv : 0;
-                _deliveredUISnapshot[req.Resource] = Mathf.Min(required, reserved);
+                _deliveredUISnapshot[req.Resource] = Mathf.Min(req.Amount, reserved);
             }
         }
     }
 
-    // Пополнить резерв из буфера (используется для Flow и для Batch до фиксации)
     void TopUpReserveFromBuffer()
     {
         if (Stage == null) return;
+
         foreach (var req in Stage.Requirements)
         {
             int required = req.Amount;
-            int already  = _reserved.TryGetValue(req.Resource, out var cur) ? cur : 0;
-            int need     = Mathf.Max(0, required - already);
+            int already = _reserved.TryGetValue(req.Resource, out var cur) ? cur : 0;
+            int need = Mathf.Max(0, required - already);
             if (need <= 0) continue;
 
             int haveBuf = Buffer ? Buffer.Get(req.Resource) : 0;
@@ -365,7 +297,6 @@ void __DBG_Print()
         _reserved.Clear();
         _deliveredUISnapshot.Clear();
         _reserveLocked = false;
-
         StageProgress = 0f;
         CurrentStageIndex++;
         OnUIChanged?.Invoke();
@@ -375,7 +306,8 @@ void __DBG_Print()
             if (JobManager.Instance != null)
             {
                 JobManager.Instance.RemoveBuildJob(this);
-                foreach (var res in _need.Keys) JobManager.Instance.RemoveHaulJob(this, res);
+                foreach (var res in _need.Keys)
+                    JobManager.Instance.RemoveHaulJob(this, res);
             }
             _need.Clear();
             return;
@@ -388,39 +320,35 @@ void __DBG_Print()
         }
     }
 
-    // === ДАННЫЕ ДЛЯ UI ===
+    int RequiredAmountFor(ResourceDef res)
+    {
+        var req = Stage?.Requirements?.FirstOrDefault(r => r.Resource == res);
+        return req != null ? req.Amount : 0;
+    }
+
     public struct StageResourceUI
     {
         public ResourceDef res;
-        public int required;     // сколько нужно по плану
-        public int deliveredUI;  // сколько показывать в панели (не убывает после фиксации Batch)
-        public int inTransit;    // в пути
+        public int required;
+        public int deliveredUI;
+        public int inTransit;
     }
 
     public IEnumerable<StageResourceUI> GetStageUIRows()
     {
         if (Stage == null || Stage.Requirements == null) yield break;
-
         bool lockedBatch = IsReserveLocked;
 
         foreach (var req in Stage.Requirements)
         {
-            int required  = req.Amount;
-            int buf       = Buffer ? Buffer.Get(req.Resource) : 0;
-            int rsv       = _reserved.TryGetValue(req.Resource, out var v) ? v : 0;
+            int required = req.Amount;
+            int buf = Buffer ? Buffer.Get(req.Resource) : 0;
+            int rsv = _reserved.TryGetValue(req.Resource, out var v) ? v : 0;
             int inTransit = JobManager.Instance ? JobManager.Instance.GetInTransit(this, req.Resource) : 0;
 
-            int delivered;
-            if (lockedBatch)
-            {
-                delivered = _deliveredUISnapshot.TryGetValue(req.Resource, out var snap)
-                    ? Mathf.Min(required, snap)
-                    : Mathf.Min(required, rsv);
-            }
-            else
-            {
-                delivered = Mathf.Min(required, buf + rsv);
-            }
+            int delivered = lockedBatch
+                ? _deliveredUISnapshot.TryGetValue(req.Resource, out var snap) ? Mathf.Min(required, snap) : Mathf.Min(required, rsv)
+                : Mathf.Min(required, buf + rsv);
 
             yield return new StageResourceUI
             {
