@@ -292,14 +292,23 @@ void PickupProp(ResourceDef res) {
     }
 
     void AttachCarryProp(ResourceDef res)
-    {
-        _carryPropInstance = palletGroup.Take(res);
-if (!_carryPropInstance) return;
+{
+    if (!palletGroup) return;
 
-_carryPropInstance.transform.SetParent(HandCarrySocket);
-_carryPropInstance.transform.localPosition = Vector3.zero;
-_carryPropInstance.transform.localRotation = Quaternion.identity;
-    }
+    var pallet = palletGroup.GetPalletFor(res);
+    if (pallet == null) return;
+
+    var slots = pallet.GetComponent<ResourcePalletSlots>();
+    if (!slots) return;
+
+    _carryPropInstance = slots.Take();
+    if (!_carryPropInstance) return;
+
+    _carryPropInstance.transform.SetParent(HandCarrySocket);
+    _carryPropInstance.transform.localPosition = Vector3.zero;
+    _carryPropInstance.transform.localRotation = Quaternion.identity;
+}
+
 
     void ClearCarry()
 {

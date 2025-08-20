@@ -1,5 +1,5 @@
 ﻿# HummerBuild API Manifest
-_Generated: 2025-08-15 11:41_
+_Generated: 2025-08-20 21:06_
 
 ## Assembly: `Assembly-CSharp-Editor`
 
@@ -1123,8 +1123,10 @@ _MonoBehaviour_
 - `public Int32 ActiveWorkersCount`
 - `public Single BaseBuildSpeedPerWorker`
 - `public InventoryProviderAdapter Buffer`
+- `public Int32 BuilderSlots`
 - `public Int32 CurrentStageIndex`
 - `public Single DistanceToStorage`
+- `public Transform DropRoot`
 - `public BuildPlan Plan`
 - `public Int32 Priority`
 - `public InventoryProviderAdapter Storage`
@@ -1133,12 +1135,15 @@ _MonoBehaviour_
 - `public Boolean IsBlockedByLack { get; set; }`
 - `public Boolean IsPaused { get; set; }`
 - `public Boolean IsReserveLocked { get; set; }`
+- `public ConstructionStage Stage { get; set; }`
 - `public Single StageProgress { get; set; }`
 
 **Methods**:
 - `Boolean CanBuildNow()`
 - `Int32 GetDeficit(ResourceDef res)`
+- `Int32 GetDropCap(ResourceDef res)`
 - `IEnumerable`1 GetStageUIRows()`
+- `Boolean HasFreeBuilderSlot()`
 - `Void Pause(Boolean pause)`
 
 ---
@@ -1148,6 +1153,11 @@ _MonoBehaviour_
 
 **Fields**:
 - `public BuildPanelUI Panel`
+
+---
+
+### BuildSiteGizmo
+_MonoBehaviour_
 
 ---
 
@@ -1359,10 +1369,9 @@ _MonoBehaviour_
 
 **Methods**:
 - `Void EnsureBuildJob(BuildSite site)`
-- `Void EnsureHaulJob(BuildSite site, ResourceDef res, Int32 needAmount, Int32 chunk)`
-- `Int32 GetActiveBuildJobsCount()`
-- `Int32 GetActiveHaulJobsCount()`
+- `Void EnsureHaulJob(BuildSite site, ResourceDef res, Int32 amount, Int32 chunk)`
 - `Int32 GetInTransit(BuildSite site, ResourceDef res)`
+- `Boolean HasReadyBuildSites()`
 - `Void RemoveBuildJob(BuildSite site)`
 - `Void RemoveHaulJob(BuildSite site, ResourceDef res)`
 - `Boolean TryGetBuildJob(WorkerAgent worker, BuildJob& job)`
@@ -1392,6 +1401,18 @@ _MonoBehaviour_
 - `public Camera camera4`
 - `public Texture2D Info`
 - `public Texture2D Logo`
+
+---
+
+### PalletGroupManager
+_MonoBehaviour_
+
+**Fields**:
+- `public InventoryProviderAdapter inventory`
+- `public List`1 pallets`
+
+**Methods**:
+- `GameObject Take(ResourceDef res)`
 
 ---
 
@@ -4238,6 +4259,25 @@ _MonoBehaviour_
 
 ---
 
+### ResourcePallet
+_MonoBehaviour_
+
+**Fields**:
+- `public Int32 maxCapacity`
+- `public ResourceDef resource`
+- `public Vector3 spacing`
+- `public Transform spawnRoot`
+
+**Properties**:
+- `public Int32 CurrentCount { get; set; }`
+
+**Methods**:
+- `Void Clear()`
+- `Void Rebuild(Int32 count, GameObject prefab)`
+- `GameObject TakeOne()`
+
+---
+
 ### ResourcePickup
 _MonoBehaviour_
 
@@ -4362,6 +4402,21 @@ _MonoBehaviour_
 - `Void OnAfterDeserialize()`
 - `Void OnBeforeSerialize()`
 - `Int32 RemoveItem(ScriptableObject res, Int32 amount)`
+
+---
+
+### StorageResourcePropSpawner
+_MonoBehaviour_
+
+**Fields**:
+- `public GameObject defaultPrefab`
+- `public InventoryProviderAdapter inventory`
+- `public List`1 resources`
+- `public Single spacing`
+- `public Transform spawnRoot`
+
+**Methods**:
+- `GameObject TakeProp(ResourceDef res)`
 
 ---
 
@@ -4794,9 +4849,21 @@ _MonoBehaviour_
 - `public Single BuildSpeedFactor`
 - `public Int32 CarryCapacityKg`
 - `public Transform HandCarrySocket`
+- `public Transform handSocket`
+- `public PalletGroupManager palletGroup`
 - `public WorkerRole Role`
 - `public Single WagePerMinute`
 - `public Single WalkSpeed`
+
+---
+
+### WorkerAnimatorSync
+_MonoBehaviour_
+
+**Fields**:
+- `public NavMeshAgent agent`
+- `public Animator animator`
+- `public String speedParam`
 
 ---
 
