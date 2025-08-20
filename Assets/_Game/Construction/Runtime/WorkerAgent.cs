@@ -16,8 +16,6 @@ public class WorkerAgent : MonoBehaviour
     [Header("Ссылки")]
     public NavMeshAgent Agent;
     public Transform HandCarrySocket;
-    public PalletGroupManager palletGroup;
-    public Transform handSocket;
 
     // Runtime
     BuildSite _site;
@@ -27,9 +25,26 @@ public class WorkerAgent : MonoBehaviour
     int _carryingAmount;
     GameObject _carryPropInstance;
 
-    // Движение
-    bool isMoving = false;
-    Vector3 lastDestination;
+
+public PalletGroupManager palletGroup;
+public Transform handSocket;
+
+GameObject carriedProp;
+
+void PickupProp(ResourceDef res) {
+    if (carriedProp) return;
+    var go = palletGroup.Take(res);
+    if (!go) return;
+    carriedProp = go;
+    go.transform.SetParent(handSocket);
+    go.transform.localPosition = Vector3.zero;
+    go.transform.localRotation = Quaternion.identity;
+    var rb = go.GetComponent<Rigidbody>();
+    if (rb) Destroy(rb);
+    var col = go.GetComponent<Collider>();
+    if (col) Destroy(col);
+}
+
 
     void Awake()
     {
@@ -47,40 +62,50 @@ public class WorkerAgent : MonoBehaviour
 
     IEnumerator MainLoop()
     {
-        float timeout = 15f;
-        float t = 0f;
+        // ЖДЁМ/ИЩЕМ JobManager
+    float timeout = 15f; // ждём до 15 сек (можно меньше/больше)
+    float t = 0f;
 
-        while (JobManager.Instance == null && t < timeout)
+    while (JobManager.Instance == null && t < timeout)
+    {
+        // попробуем найти вручную в сцене
+        var found = FindObjectOfType<JobManager>();
+        if (found != null)
         {
-            var found = FindObjectOfType<JobManager>();
-            if (found != null)
-            {
-                var _ = JobManager.Instance;
-                break;
-            }
-
-            if (t > 2f && JobManager.Instance == null && found == null)
-            {
-                var go = new GameObject("Systems(JobManager_Auto)");
-                go.AddComponent<JobManager>();
-            }
-
-            t += Time.unscaledDeltaTime;
-            yield return null;
+            // Awake у него уже проставит Instance
+            var _ = JobManager.Instance;
+            break;
         }
 
-        if (JobManager.Instance == null)
+        // на крайний случай: создадим пустой менеджер динамически (если забыли добавить на сцену)
+        if (t > 2f && JobManager.Instance == null && found == null)
         {
-            Debug.LogError($"[WorkerAgent] Не удалось получить JobManager.Instance за {timeout:F1}s. Worker='{name}'", this);
-            while (JobManager.Instance == null) yield return new WaitForSeconds(0.5f);
+            var go = new GameObject("Systems(JobManager_Auto)");
+            go.AddComponent<JobManager>();
+            // после этого Awake выставит Instance и DontDestroyOnLoad
         }
 
-        for (;;)
-        {
-            if (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); continue; }
+        t += Time.unscaledDeltaTime;
+        yield return null;
+    }
 
-            bool buildFirst = true;
-            try { buildFirst = JobManager.Instance.HasReadyBuildSites(); } catch { }
+    if (JobManager.Instance == null)
+    {
+        Debug.LogError($"[WorkerAgent] Не удалось получить JobManager.Instance за {timeout:F1}s. Worker='{name}'", this);
+        // мягкий ретрай без спама
+        while (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); }
+    }
+
+    // --- основной цикл как был ---
+    for (;;)
+    {
+        if (JobManager.Instance == null) { yield return new WaitForSeconds(0.5f); continue; }
+
+        // далее ваш приоритет Build → Haul → Build (как мы делали)
+
+            // ========= ПРИОРИТЕТ: СНАЧАЛА СТРОЙКА (если есть где строить) =========
+            bool buildFirst = true; // по умолчанию — отдаём приоритет стройке
+            try { buildFirst = JobManager.Instance.HasReadyBuildSites(); } catch { /* на всякий */ }
 
             if (buildFirst)
             {
@@ -92,6 +117,8 @@ public class WorkerAgent : MonoBehaviour
                         _site.ActiveWorkersCount++;
                         while (_site != null && _site.CanBuildNow())
                         {
+                            // при желании: вклад от конкретного рабочего
+                            // _site.AddBuildContribution(BuildSpeedFactor);
                             yield return new WaitForSeconds(0.5f);
                         }
                         _site.ActiveWorkersCount = Mathf.Max(0, _site.ActiveWorkersCount - 1);
@@ -101,35 +128,37 @@ public class WorkerAgent : MonoBehaviour
                 }
             }
 
+            // ========= ЕСЛИ СТРОИТЬ НЕГДЕ — ПРОБУЕМ ДОСТАВКУ =========
             if (JobManager.Instance.TryGetNextHaulJob(this, out _haul))
             {
-                if (_haul == null || _haul.Site == null || _haul.Resource == null)
-                {
-                    yield return new WaitForSeconds(0.2f);
-                    continue;
-                }
+                if (_haul == null) { yield return new WaitForSeconds(0.2f); continue; }
+                if (_haul.Site == null) { Debug.LogWarning("[WorkerAgent] HaulJob без Site.", this); yield return new WaitForSeconds(0.2f); continue; }
+                if (_haul.Resource == null) { Debug.LogWarning($"[WorkerAgent] HaulJob '{_haul.Site?.name}' Resource=null.", this); yield return new WaitForSeconds(0.2f); continue; }
 
                 _site = _haul.Site;
-                if (_site.Storage == null || _site.Buffer == null)
-                {
-                    Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' без Storage или Buffer", _site);
-                    yield return new WaitForSeconds(0.5f);
-                    continue;
-                }
 
+                if (_site.Storage == null) { Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' без Storage (адаптера).", _site); yield return new WaitForSeconds(0.5f); continue; }
+                if (_site.Buffer == null)  { Debug.LogError($"[WorkerAgent] BuildSite '{_site.name}' без Buffer (адаптера).", _site); yield return new WaitForSeconds(0.5f); continue; }
+
+                // грузоподъёмность по массе
                 float unitMass = Mathf.Max(0.01f, _haul.Resource.UnitMass);
                 int capacityByMass = Mathf.Max(1, Mathf.FloorToInt(CarryCapacityKg / unitMass));
+
+                // кап по дефициту (на момент резервирования)
                 int deficit = _site.GetDeficit(_haul.Resource);
                 if (deficit <= 0) { _haul.CompleteChunk(0); yield return null; continue; }
 
+                // резерв с учётом массы и дефицита
                 int chunk = Mathf.Min(_haul.ReserveChunk(capacityByMass), deficit);
                 if (chunk <= 0) { yield return null; continue; }
 
                 _carryingRes = _haul.Resource;
                 _carryingAmount = 0;
 
+                // — идём к складу через PickupPoints —
                 yield return MoveViaPickupPoints(_site.Storage.gameObject);
 
+                // забираем (может оказаться меньше, чем зарезервировано)
                 int taken = SafeRemove(_site.Storage, _carryingRes, chunk);
                 if (taken <= 0)
                 {
@@ -142,8 +171,10 @@ public class WorkerAgent : MonoBehaviour
                 _carryingAmount = taken;
                 AttachCarryProp(_carryingRes);
 
-                yield return MoveToPalletPickupPoint(_site, _carryingRes);
+                // — везём на стройку через её PickupPoints —
+                yield return MoveViaPickupPoints(_site.gameObject);
 
+                // кап на выгрузке (БЕЗ учёта inTransit)
                 int deliverCap = _site.GetDropCap(_carryingRes);
                 int delivered = 0;
 
@@ -151,18 +182,29 @@ public class WorkerAgent : MonoBehaviour
                 {
                     int toDrop = Mathf.Min(_carryingAmount, deliverCap);
                     delivered = SafeAdd(_site.Buffer, _carryingRes, toDrop);
+                    // Визуальный дроп CarryProp на стройке
+                        if (_carryPropInstance && _site.DropRoot && delivered > 0)
+                        {
+                            // открепляем от руки
+                            _carryPropInstance.transform.SetParent(_site.DropRoot);
+                            
+                            // случайное положение в области DropRoot
+                            Vector3 offset = new Vector3(Random.Range(-1f, 1f), 0, Random.Range(-1f, 1f));
+                            _carryPropInstance.transform.localPosition = offset;
 
-                    if (_carryPropInstance && _site.buildPalletGroup && delivered > 0)
-                    {
-                        bool success = _site.buildPalletGroup.TryAddVisual(_carryingRes, _carryPropInstance);
-                        if (success) _carryPropInstance = null;
-                    }
+                            // случайный поворот
+                            _carryPropInstance.transform.localRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
 
+                            // сбрасываем ссылку, чтобы не уничтожить в ClearCarry
+                            _carryPropInstance = null;
+                        }
                     _carryingAmount -= delivered;
                 }
 
+                // фикс реальной доставки
                 _haul.CompleteChunk(delivered);
 
+                // если остался хвост — возвращаем на склад и снимаем зависший inTransit
                 if (_carryingAmount > 0)
                 {
                     int returned = SafeAdd(_site.Storage, _carryingRes, _carryingAmount);
@@ -173,9 +215,11 @@ public class WorkerAgent : MonoBehaviour
                     }
                 }
 
+                // очистка
                 _carryingAmount = 0;
                 ClearCarry();
 
+                // после доставки попробуем ещё раз строить (вдруг уже есть слот/готовность)
                 if (JobManager.Instance.TryGetBuildJob(this, out _build) && _build != null)
                 {
                     _site = _build.Site;
@@ -193,9 +237,12 @@ public class WorkerAgent : MonoBehaviour
                 continue;
             }
 
+            // ========= НИЧЕГО НЕ НАШЛОСЬ — КОРОТКИЙ IDLE =========
             yield return new WaitForSeconds(0.25f);
         }
     }
+
+    // ---------- ДВИЖЕНИЕ / ВСПОМОГАТЕЛЬНЫЕ ----------
 
     IEnumerator MoveViaPickupPoints(GameObject target)
     {
@@ -217,89 +264,52 @@ public class WorkerAgent : MonoBehaviour
     {
         if (!Agent)
         {
-            Debug.LogError($"[WorkerAgent] {name}: Нет NavMeshAgent", this);
+            Debug.LogError($"[WorkerAgent] {name}: Нет NavMeshAgent — перемещение невозможно.", this);
             yield break;
         }
-
-        if (isMoving && Vector3.Distance(pos, lastDestination) < 0.1f)
-            yield break;
-
-        while (isMoving)
-            yield return null;
-
-        isMoving = true;
-        lastDestination = pos;
 
         Agent.isStopped = false;
         Agent.SetDestination(pos);
 
-        while (Agent.pathPending)
-            yield return null;
-
-        while (Agent.remainingDistance > Agent.stoppingDistance + 0.05f)
+        while (Agent.pathPending || Agent.remainingDistance > Agent.stoppingDistance + 0.05f)
             yield return null;
 
         Agent.isStopped = true;
-        isMoving = false;
-    }
-
-    IEnumerator MoveToPalletPickupPoint(BuildSite site, ResourceDef res)
-    {
-        if (site.buildPalletGroup == null)
-        {
-            yield return MoveViaPickupPoints(site.gameObject);
-            yield break;
-        }
-
-        var pallet = site.buildPalletGroup.GetPalletFor(res);
-        if (pallet == null)
-        {
-            yield return MoveViaPickupPoints(site.gameObject);
-            yield break;
-        }
-
-        var pp = pallet.GetComponent<PickupPoints>();
-        if (pp && pp.TryAcquire(out var slot))
-        {
-            yield return MoveTo(slot.position);
-            pp.Release(slot);
-        }
-        else
-        {
-            yield return MoveTo(pallet.transform.position + Vector3.right);
-        }
-    }
-
-    void AttachCarryProp(ResourceDef res)
-    {
-        _carryPropInstance = palletGroup.Take(res);
-        if (!_carryPropInstance) return;
-
-        _carryPropInstance.transform.SetParent(HandCarrySocket);
-        _carryPropInstance.transform.localPosition = Vector3.zero;
-        _carryPropInstance.transform.localRotation = Quaternion.identity;
-    }
-
-    void ClearCarry()
-    {
-        _carryingRes = null;
-        _carryingAmount = 0;
-
-        if (_carryPropInstance && _carryPropInstance.transform.parent == HandCarrySocket)
-            Destroy(_carryPropInstance);
-
-        _carryPropInstance = null;
     }
 
     int SafeRemove(InventoryProviderAdapter inv, ResourceDef res, int amount)
     {
-        if (!inv || !res) return 0;
+        if (!inv) { Debug.LogError("[WorkerAgent] SafeRemove: Inventory == null", this); return 0; }
+        if (!res) { Debug.LogError("[WorkerAgent] SafeRemove: Resource == null", this); return 0; }
         return inv.Remove(res, amount);
     }
 
     int SafeAdd(InventoryProviderAdapter inv, ResourceDef res, int amount)
     {
-        if (!inv || !res) return 0;
+        if (!inv) { Debug.LogError("[WorkerAgent] SafeAdd: Inventory == null", this); return 0; }
+        if (!res) { Debug.LogError("[WorkerAgent] SafeAdd: Resource == null", this); return 0; }
         return inv.Add(res, amount);
     }
+
+    void AttachCarryProp(ResourceDef res)
+    {
+        _carryPropInstance = palletGroup.Take(res);
+if (!_carryPropInstance) return;
+
+_carryPropInstance.transform.SetParent(HandCarrySocket);
+_carryPropInstance.transform.localPosition = Vector3.zero;
+_carryPropInstance.transform.localRotation = Quaternion.identity;
+    }
+
+    void ClearCarry()
+{
+    _carryingRes = null;
+    _carryingAmount = 0;
+
+    // не уничтожаем, если уже передано в DropRoot
+    if (_carryPropInstance && _carryPropInstance.transform.parent == HandCarrySocket)
+        Destroy(_carryPropInstance);
+
+    _carryPropInstance = null;
+}
 }
