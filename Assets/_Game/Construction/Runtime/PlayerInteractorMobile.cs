@@ -1,6 +1,7 @@
 using UnityEngine;
-using UnityEngine.UI;
 
+/// Версия под мобильную кнопку: показывает Pick/Drop по контексту.
+/// Работает с PlayerCarryController и PalletInteractable (slots).
 public class PlayerInteractorMobile : MonoBehaviour
 {
     [Header("Поиск цели")]
@@ -9,71 +10,73 @@ public class PlayerInteractorMobile : MonoBehaviour
     public float fallbackRadius = 2.0f;
     public LayerMask interactMask = ~0;
 
-    [Header("Ссылки")]
-    public PlayerCarry carry;
-    public GameObject pickButton;   // кнопка “Взять”
-    public GameObject dropButton;   // кнопка “Положить”
+    [Header("Refs")]
+    public PlayerCarryController carry;
+    public GameObject pickButton;   // “Взять”
+    public GameObject dropButton;   // “Положить”
 
     PalletInteractable _currentTarget;
 
     void Reset()
     {
         cam = Camera.main;
-        carry = GetComponent<PlayerCarry>();
+        carry = GetComponent<PlayerCarryController>();
     }
 
     void Update()
     {
-        // Поиск цели (каждый кадр)
         _currentTarget = null;
         TryFindTarget(out _currentTarget);
 
-        // Управляем кнопками
-        if (pickButton) pickButton.SetActive(carry.IsEmpty && _currentTarget != null);
-        if (dropButton) dropButton.SetActive(!carry.IsEmpty && _currentTarget != null);
+        bool canPick = !carry || !carry.IsCarrying ? _currentTarget != null : false;
+        bool canDrop =  carry && carry.IsCarrying  ? _currentTarget != null : false;
+
+        if (pickButton) pickButton.SetActive(canPick);
+        if (dropButton) dropButton.SetActive(canDrop);
     }
 
-    // Кнопка “Взять”
+    // === UI callbacks ===
     public void OnPickButton()
     {
-        if (!carry || !carry.IsEmpty || _currentTarget == null) return;
+        if (carry == null || carry.IsCarrying || _currentTarget == null) return;
 
-        if (_currentTarget.TryTakeOne(out var res))
+        if (_currentTarget.TryTakeOne(out var prop))
         {
-            carry.Pickup(res);
+            carry.Attach(prop); // аниматор сам включится
         }
     }
 
-    // Кнопка “Положить”
     public void OnDropButton()
     {
-        if (!carry || carry.IsEmpty || _currentTarget == null) return;
+        if (carry == null || !carry.IsCarrying || _currentTarget == null) return;
 
-        if (_currentTarget.TryPutOne(carry.CarriedRes))
+        var held = carry.Detach(); // вернёт объект и выключит аниматор
+        if (!held) return;
+
+        // положим в палету; если не получилось — просто бросим рядом
+        if (!_currentTarget.TryPutOne(held))
         {
-            carry.ClearHand();
+            // запасной дроп на пол
+            held.transform.position = transform.position + transform.forward * 0.8f + Vector3.up * 0.3f;
+            if (!held.TryGetComponent<Rigidbody>(out var rb)) rb = held.AddComponent<Rigidbody>();
+            rb.mass = 5f;
         }
     }
 
-    // --- Поиск цели ---
+    // === поиск палеты ===
     bool TryFindTarget(out PalletInteractable pallet)
     {
         pallet = null;
-        if (!cam)
-        {
-            cam = Camera.main;
-            if (!cam) return false;
-        }
+        if (!cam) cam = Camera.main;
+        if (!cam) return false;
 
-        // 1) Луч из центра экрана
         Ray r = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         if (Physics.Raycast(r, out var hit, interactDistance, interactMask, QueryTriggerInteraction.Collide))
         {
             pallet = hit.collider.GetComponentInParent<PalletInteractable>();
-            if (pallet != null) return true;
+            if (pallet) return true;
         }
 
-        // 2) Поиск ближайшего в радиусе
         var cols = Physics.OverlapSphere(transform.position, fallbackRadius, interactMask, QueryTriggerInteraction.Collide);
         float best = float.MaxValue;
         PalletInteractable bestPal = null;
@@ -84,26 +87,17 @@ public class PlayerInteractorMobile : MonoBehaviour
             if (!p) continue;
 
             float d = Vector3.Distance(transform.position, p.transform.position);
-            if (d < best && d <= interactDistance)
-            {
-                best = d;
-                bestPal = p;
-            }
+            if (d < best && d <= interactDistance) { best = d; bestPal = p; }
         }
 
-        if (bestPal != null)
-        {
-            pallet = bestPal;
-            return true;
-        }
-
-        return false;
+        pallet = bestPal;
+        return pallet != null;
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(0.2f, 0.6f, 1f, 0.2f);
+        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
         Gizmos.DrawWireSphere(transform.position, fallbackRadius);
     }
 #endif

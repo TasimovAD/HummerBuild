@@ -15,7 +15,8 @@ public class ResourcePalletSlots : MonoBehaviour
     public bool AutoFindSlots = true;
 
     private readonly List<Transform> _slots = new();
-    private readonly List<GameObject> _spawned = new();
+    // слот → объект (так надёжнее, чем просто список)
+    private readonly Dictionary<Transform, GameObject> _placed = new();
 
     void Awake()
     {
@@ -23,9 +24,11 @@ public class ResourcePalletSlots : MonoBehaviour
     }
 
     /// Собирает детей SlotRoot с именами Slot_0, Slot_1...
+    [ContextMenu("Find Slots")]
     public void FindSlots()
     {
         _slots.Clear();
+        _placed.Clear();
 
         if (SlotRoot == null)
         {
@@ -42,12 +45,12 @@ public class ResourcePalletSlots : MonoBehaviour
 
     public void ClearAll()
     {
-        foreach (var go in _spawned)
-            if (go) Destroy(go);
-        _spawned.Clear();
+        foreach (var kv in _placed)
+            if (kv.Value) Destroy(kv.Value);
+        _placed.Clear();
     }
 
-    /// Полная перестройка палеты под нужное количество
+    /// Полная перестройка палеты под нужное количество (инстанс по префабу)
     public void Rebuild(int count, GameObject prefab)
     {
         ClearAll();
@@ -71,7 +74,7 @@ public class ResourcePalletSlots : MonoBehaviour
             var slot = _slots[i];
             var go = Instantiate(p, slot.position, slot.rotation, slot);
             go.name = $"{(Resource ? Resource.Id : p.name)}_{i}";
-            _spawned.Add(go);
+            _placed[slot] = go;
         }
     }
 
@@ -81,14 +84,38 @@ public class ResourcePalletSlots : MonoBehaviour
         Rebuild(count, Resource != null ? Resource.CarryProp : DefaultPrefab);
     }
 
+    /// Положить УЖЕ СУЩЕСТВУЮЩИЙ объект в первый свободный слот
+    public bool TryAdd(GameObject go)
+    {
+        if (!go) return false;
+
+        for (int i = 0; i < _slots.Count; i++)
+        {
+            var slot = _slots[i];
+            if (!_placed.TryGetValue(slot, out var cur) || cur == null)
+            {
+                go.transform.SetParent(slot, false);
+                go.transform.localPosition = Vector3.zero;
+                go.transform.localRotation = Quaternion.identity;
+                _placed[slot] = go;
+                return true;
+            }
+        }
+        return false; // нет свободных слотов
+    }
+
     /// Взять 1 объект со слотов
     public GameObject Take()
     {
-        if (_spawned.Count == 0) return null;
-
-        var go = _spawned[0];
-        _spawned.RemoveAt(0);
-        if (go) go.transform.SetParent(null);
-        return go;
+        foreach (var slot in _slots)
+        {
+            if (_placed.TryGetValue(slot, out var go) && go != null)
+            {
+                _placed[slot] = null;
+                go.transform.SetParent(null, true);
+                return go;
+            }
+        }
+        return null;
     }
 }

@@ -1,45 +1,33 @@
 using UnityEngine;
 
-/// Навесь на GO палеты. Это "точка взаимодействия" игрока.
-[RequireComponent(typeof(Collider))]
+/// Вешай на объект-палету, где уже есть компонент ResourcePalletSlots.
+/// Даёт простой API для взятия/возврата готовых пропов (из слотов).
+[RequireComponent(typeof(ResourcePalletSlots))]
 public class PalletInteractable : MonoBehaviour
 {
-    [Header("Что лежит на палете")]
-    public ResourceDef resource;
+    public ResourcePalletSlots slots;
 
-    [Header("Чей инвентарь отображает палета")]
-    public InventoryProviderAdapter inventory; // например: Warehouse или BuildSite.Buffer
-
-    [Header("Необязательно, чисто для навигации/отладок")]
-    public ResourcePalletSlots slots; // можно не задавать
-
-    /// Есть ли хотя бы 1 ед. ресурса в этом инвентаре?
-    public bool HasAny()
+    void Reset()
     {
-        if (!inventory || !resource) return false;
-        return inventory.Get(resource) > 0;
+        slots = GetComponent<ResourcePalletSlots>();
     }
 
-    /// Игрок забирает 1 ед. (из инвентаря), визуал сам обновится через PalletGroupManager.OnChanged
-    public bool TryTakeOne(out ResourceDef res)
+    public bool TryTakeOne(out GameObject prop)
     {
-        res = null;
-        if (!inventory || !resource) return false;
+        prop = null;
+        if (!slots) return false;
 
-        int removed = inventory.Remove(resource, 1);
-        if (removed > 0)
-        {
-            res = resource;
-            return true;
-        }
-        return false;
+        var go = slots.Take();
+        if (!go) return false;
+
+        prop = go;
+        return true;
     }
 
-    /// Игрок кладёт 1 ед. в этот инвентарь
-    public bool TryPutOne(ResourceDef res)
+    public bool TryPutOne(GameObject prop)
     {
-        if (!inventory || !res) return false;
-        int added = inventory.Add(res, 1);
-        return added > 0;
+        if (!slots || !prop) return false;
+        // кладём по слоту: без ребилда — просто поставить
+        return slots.TryAdd(prop);
     }
 }
