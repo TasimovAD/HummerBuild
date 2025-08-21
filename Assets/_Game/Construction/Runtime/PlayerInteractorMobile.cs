@@ -17,6 +17,8 @@ public class PlayerInteractorMobile : MonoBehaviour
 
     PalletInteractable _currentTarget;
 
+    
+
     void Reset()
     {
         cam = Camera.main;
@@ -33,6 +35,8 @@ public class PlayerInteractorMobile : MonoBehaviour
 
         if (pickButton) pickButton.SetActive(canPick);
         if (dropButton) dropButton.SetActive(canDrop);
+
+        
     }
 
     // === UI callbacks ===

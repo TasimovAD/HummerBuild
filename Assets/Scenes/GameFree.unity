@@ -15631,6 +15631,7 @@ GameObject:
   - component: {fileID: 569810972}
   - component: {fileID: 569810974}
   - component: {fileID: 569810975}
+  - component: {fileID: 569810976}
   m_Layer: 8
   m_Name: Character
   m_TagString: Player
@@ -16253,7 +16254,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   openCloseEvents: 0
   openCloseWindow: 1
-  selectedToolbar: 9
+  selectedToolbar: 2
   _isDead: 1
   _currentHealth: 0
   isImmortal: 0
@@ -16549,6 +16550,12 @@ MonoBehaviour:
   handSocket: {fileID: 379405278}
   carryBoolParam: Carry
   carryTypeParam: CarryType
+  carryMoveParam: CarryMove
+  inputMagParam: InputMagnitude
+  useAnimatorInputMagnitude: 0
+  moveThreshold: 0.1
+  characterController: {fileID: 0}
+  rigidbodyRef: {fileID: 569810966}
   baseMoveSpeedMul: 1
 --- !u!114 &569810975
 MonoBehaviour:
@@ -16564,8 +16571,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 569810969}
   carryBoolParam: Carry
+  carryMoveBoolParam: CarryMove
   layerName: CarryUpperBody
   lerpSpeed: 10
+--- !u!114 &569810976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 569810958}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 338abca98a832486fafceeaf93ff5f12, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  carry: {fileID: 569810974}
+  invectorTPC: {fileID: 569810968}
+  blendSpeed: 6
 --- !u!1 &572651011
 GameObject:
   m_ObjectHideFlags: 0
@@ -45874,7 +45897,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Role: 0
   CarryCapacityKg: 1
-  WalkSpeed: 1.5
+  WalkSpeed: 1.2
   BuildSpeedFactor: 0.1
   WagePerMinute: 5
   Agent: {fileID: 1829971494}
@@ -45892,7 +45915,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 1.5
+  m_Speed: 1.2
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
@@ -45989,6 +46012,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 1829971499}
   carryBoolParam: Carry
+  carryMoveBoolParam: CarryMove
   layerName: CarryUpperBody
   lerpSpeed: 10
 --- !u!4 &1833655851 stripped
@@ -48928,7 +48952,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 412585402}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.9999998
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

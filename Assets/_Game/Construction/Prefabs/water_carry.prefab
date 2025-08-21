@@ -150,4 +150,4 @@ MonoBehaviour:
   localScale: {x: 1, y: 1, z: 1}
   rightHandIKTarget: {fileID: 0}
   leftHandIKTarget: {fileID: 0}
-  moveSpeedMul: 0.5
+  moveSpeedMul: 0.2
