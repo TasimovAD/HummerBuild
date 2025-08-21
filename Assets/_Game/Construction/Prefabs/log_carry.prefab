@@ -151,6 +151,8 @@ MonoBehaviour:
   localScale: {x: 1, y: 1, z: 1}
   rightHandIKTarget: {fileID: 0}
   leftHandIKTarget: {fileID: 0}
+  playerSpeedMul: 0.2
+  workerSpeedMul: 0.5
   moveSpeedMul: 0.2
 --- !u!1 &8554922292984452821
 GameObject:

@@ -8,7 +8,7 @@ public class WorkerCarryController : MonoBehaviour
 {
     [Header("Ссылки")]
     public Animator animator;
-    public Transform handSocket;          // куда крепим проп (совпадает с HandCarrySocket в твоём агенте)
+    public Transform handSocket;  // совпадает с HandCarrySocket у рабочего
 
 #if USING_ANIMATION_RIGGING
     [Header("Animation Rigging (опц.)")]
@@ -17,91 +17,79 @@ public class WorkerCarryController : MonoBehaviour
 #endif
 
     [Header("Параметры аниматора")]
-    public string carryBoolParam = "Carry";      // bool: несём/не несём
-    public string carryTypeParam = "CarryType";  // int: 0=OneHand, 1=TwoHandFront, 2=Shoulder
+    public string carryBoolParam = "Carry";
+    public string carryTypeParam = "CarryType";
 
     [Header("Скорости")]
-    [Range(0.1f, 2f)] public float baseMoveSpeedMul = 1f; // множитель по умолчанию (1)
-    public float currentMoveMul = 1f; // на чтение извне (например, для NavMeshAgent.speed)
+    [Range(0.1f, 2f)] public float baseMoveSpeedMul = 1f;
+    public float currentMoveMul { get; private set; } = 1f;
 
     public GameObject CurrentProp { get; private set; }
     public CarryGrip CurrentGrip { get; private set; }
-
     public bool IsCarrying => CurrentProp != null;
 
     public void Attach(GameObject prop)
     {
-        Detach(); // на всякий случай
-
+        Detach();
         if (!prop || !handSocket) return;
 
         CurrentProp = prop;
         CurrentGrip = prop.GetComponentInChildren<CarryGrip>();
 
-        // parent under socket
-        prop.transform.SetParent(handSocket, worldPositionStays: false);
+        prop.transform.SetParent(handSocket, false);
 
         if (CurrentGrip)
         {
             prop.transform.localPosition = CurrentGrip.localPosition;
             prop.transform.localRotation = Quaternion.Euler(CurrentGrip.localEulerAngles);
-            prop.transform.localScale = CurrentGrip.localScale;
+            prop.transform.localScale    = CurrentGrip.localScale;
         }
         else
         {
             prop.transform.localPosition = Vector3.zero;
             prop.transform.localRotation = Quaternion.identity;
-            // масштаб оставляем как у пропа
         }
 
-        // аниматор
-        if (animator)
+        if (prop.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
+        foreach (var col in prop.GetComponentsInChildren<Collider>()) col.enabled = false;
+
+        if (animator && !string.IsNullOrEmpty(carryBoolParam))
+            animator.SetBool(carryBoolParam, true);
+
+        if (animator && !string.IsNullOrEmpty(carryTypeParam))
         {
-            if (!string.IsNullOrEmpty(carryBoolParam))
-                animator.SetBool(carryBoolParam, true);
-
-            if (!string.IsNullOrEmpty(carryTypeParam))
+            int type = 0;
+            if (CurrentGrip)
             {
-                int type = 0;
-                if (CurrentGrip != null)
+                switch (CurrentGrip.style)
                 {
-                    switch (CurrentGrip.style)
-                    {
-                        case CarryStyle.OneHand:      type = 0; break;
-                        case CarryStyle.TwoHandFront: type = 1; break;
-                        case CarryStyle.Shoulder:     type = 2; break;
-                    }
+                    case CarryStyle.OneHand:      type = 0; break;
+                    case CarryStyle.TwoHandFront: type = 1; break;
+                    case CarryStyle.Shoulder:     type = 2; break;
                 }
-                animator.SetInteger(carryTypeParam, type);
             }
+            animator.SetInteger(carryTypeParam, type);
         }
 
-        // IK (опционально, если используешь Animation Rigging)
 #if USING_ANIMATION_RIGGING
         ApplyIKTargets(true);
 #endif
 
-        // скорость
-        currentMoveMul = (CurrentGrip ? CurrentGrip.moveSpeedMul : baseMoveSpeedMul);
+        // <<< ключевая строка: берём коэффициент для РАБОЧЕГО
+        currentMoveMul = CurrentGrip ? CurrentGrip.workerSpeedMul : baseMoveSpeedMul;
     }
 
     public void Detach()
     {
-        // IK off
 #if USING_ANIMATION_RIGGING
         ApplyIKTargets(false);
 #endif
-        // аниматор
-        if (animator)
-        {
-            if (!string.IsNullOrEmpty(carryBoolParam))
-                animator.SetBool(carryBoolParam, false);
-        }
+        if (animator && !string.IsNullOrEmpty(carryBoolParam))
+            animator.SetBool(carryBoolParam, false);
 
-        // отцепить/удалить проп
         if (CurrentProp)
         {
-            // тут не уничтожаем — let caller decide
+            foreach (var c in CurrentProp.GetComponentsInChildren<Collider>()) c.enabled = true;
             CurrentProp.transform.SetParent(null);
         }
 
