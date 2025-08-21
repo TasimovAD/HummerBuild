@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2319912537394492785}
   - component: {fileID: 8336311913988389233}
   - component: {fileID: 998965310538764639}
+  - component: {fileID: 7877231681403719019}
   m_Layer: 0
   m_Name: sand_carry
   m_TagString: Untagged
@@ -29,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 3508271639878129708}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 4.2885733, y: -0.9999999, z: 25.937645}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -105,7 +106,7 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
@@ -131,3 +132,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.46226683, y: 0.1950636, z: 0.7619678}
   m_Center: {x: -0.027269915, y: 0.08764664, z: 0.004030913}
+--- !u!114 &7877231681403719019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3508271639878129708}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c328962805ca4221aa332f111250d58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  style: 0
+  localPosition: {x: 0, y: 0, z: 0}
+  localEulerAngles: {x: 0, y: 0, z: 0}
+  localScale: {x: 1, y: 1, z: 1}
+  rightHandIKTarget: {fileID: 0}
+  leftHandIKTarget: {fileID: 0}
+  moveSpeedMul: 0.5

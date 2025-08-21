@@ -16,6 +16,8 @@ public class WorkerAgent : MonoBehaviour
     [Header("Ссылки")]
     public NavMeshAgent Agent;
     public Transform HandCarrySocket;
+    public WorkerCarryController CarryController;
+
 
     // Runtime
     BuildSite _site;
@@ -293,21 +295,38 @@ void PickupProp(ResourceDef res) {
 
     void AttachCarryProp(ResourceDef res)
 {
-    if (!palletGroup) return;
+    // проп берём как и раньше — у тебя логика спавна уже есть
+    if (!res) return;
+    if (!HandCarrySocket) return;
 
-    var pallet = palletGroup.GetPalletFor(res);
-    if (pallet == null) return;
+    // у ресурса должен быть CarryProp (иначе только анимация без визуала)
+    GameObject prefab = res.CarryProp;
+    if (!prefab)
+    {
+        // можно включить только анимацию
+        if (CarryController && CarryController.animator)
+        {
+            CarryController.Attach(null);
+            if (Agent) Agent.speed = CarryController.currentMoveMul * WalkSpeed;
+        }
+        return;
+    }
 
-    var slots = pallet.GetComponent<ResourcePalletSlots>();
-    if (!slots) return;
-
-    _carryPropInstance = slots.Take();
-    if (!_carryPropInstance) return;
-
-    _carryPropInstance.transform.SetParent(HandCarrySocket);
-    _carryPropInstance.transform.localPosition = Vector3.zero;
-    _carryPropInstance.transform.localRotation = Quaternion.identity;
+    _carryPropInstance = Instantiate(prefab);
+    if (CarryController)
+    {
+        CarryController.Attach(_carryPropInstance);
+        if (Agent) Agent.speed = CarryController.currentMoveMul * WalkSpeed;
+    }
+    else
+    {
+        // fallback: просто прицепить к сокету без анимации и оффсетов
+        _carryPropInstance.transform.SetParent(HandCarrySocket);
+        _carryPropInstance.transform.localPosition = Vector3.zero;
+        _carryPropInstance.transform.localRotation = Quaternion.identity;
+    }
 }
+
 
 
     void ClearCarry()
@@ -315,10 +334,23 @@ void PickupProp(ResourceDef res) {
     _carryingRes = null;
     _carryingAmount = 0;
 
-    // не уничтожаем, если уже передано в DropRoot
-    if (_carryPropInstance && _carryPropInstance.transform.parent == HandCarrySocket)
-        Destroy(_carryPropInstance);
+    if (CarryController)
+    {
+        // Контроллер сам отцепит и сбросит анимацию
+        // Если проп ещё наш — можно удалить
+        if (CarryController.CurrentProp && CarryController.CurrentProp.transform.parent == CarryController.handSocket)
+            Destroy(CarryController.CurrentProp);
+
+        CarryController.Detach();
+        if (Agent) Agent.speed = WalkSpeed; // вернуть скорость
+    }
+    else
+    {
+        if (_carryPropInstance)
+            Destroy(_carryPropInstance);
+    }
 
     _carryPropInstance = null;
 }
+
 }

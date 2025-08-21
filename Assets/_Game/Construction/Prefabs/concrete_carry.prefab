@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5623405870075020367}
   - component: {fileID: 3296473261469381125}
   - component: {fileID: -4063017451630948627}
+  - component: {fileID: 1394659095114364804}
   m_Layer: 0
   m_Name: concrete_carry
   m_TagString: Untagged
@@ -29,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 8931963708877791020}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.09668255, y: -1.0000005, z: 19.470863}
+  m_LocalPosition: {x: 0, y: -1.0000005, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -105,7 +106,7 @@ MeshCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
@@ -131,3 +132,22 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.8025952, y: 0.24736018, z: 0.48497772}
   m_Center: {x: -0.000000029802322, y: 0.09878277, z: 0}
+--- !u!114 &1394659095114364804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8931963708877791020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c328962805ca4221aa332f111250d58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  style: 1
+  localPosition: {x: 0.142, y: 0.135, z: 0.225}
+  localEulerAngles: {x: 70.982, y: -6.302, z: 63.278}
+  localScale: {x: 1, y: 1, z: 1}
+  rightHandIKTarget: {fileID: 0}
+  leftHandIKTarget: {fileID: 0}
+  moveSpeedMul: 0.5
