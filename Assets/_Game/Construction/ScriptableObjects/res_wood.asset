@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: wood
   DisplayName: Wood
-  Icon: {fileID: 0}
+  Icon: {fileID: 21300000, guid: 29ddf7f1718bb4972a6b9deacebbda25, type: 3}
   CarryProp: {fileID: 5885690783159889269, guid: 446b7489ea1da44a985c42cfcb80b457, type: 3}
   UnitMass: 1

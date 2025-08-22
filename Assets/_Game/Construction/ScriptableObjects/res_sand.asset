@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: sand
   DisplayName: Sand
-  Icon: {fileID: 0}
+  Icon: {fileID: 21300000, guid: b9bcdbd29a1704596b2b991b628ac25f, type: 3}
   CarryProp: {fileID: 3508271639878129708, guid: 7eba380725b164401aede33cb9340fb8, type: 3}
   UnitMass: 1

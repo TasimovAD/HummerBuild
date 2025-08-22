@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 
 public class BuildPanelUI : MonoBehaviour
 {
@@ -9,10 +10,14 @@ public class BuildPanelUI : MonoBehaviour
     public BuildSite Target;
 
     [Header("UI")]
-    public Transform ResourceListRoot;
-    public GameObject ResourceRowPrefab; // префаб со скриптом ResourceRowUI
     public Slider ProgressBar;
     public TMP_Text StageTitle;
+
+    [Header("Pre-placed rows (fixed count, order = visual)")]
+    public List<ResourceRowUI> Rows = new List<ResourceRowUI>();
+
+    [Tooltip("Заполнять строки слева-направо данными этапа, остаток — как пустышки")]
+    public bool FillLeftToRight = true;
 
     void OnEnable()
     {
@@ -35,22 +40,27 @@ public class BuildPanelUI : MonoBehaviour
 
     void OnProgressChanged(float v)
     {
-        if (ProgressBar != null && Target != null && Target.Plan != null)
-        {
-            var stage = (Target.CurrentStageIndex < Target.Plan.Stages.Count)
-                ? Target.Plan.Stages[Target.CurrentStageIndex]
-                : null;
+        if (!ProgressBar || !Target) return;
 
-            float work = (stage != null) ? Mathf.Max(0.0001f, stage.WorkAmount) : 1f;
-            ProgressBar.value = Mathf.Clamp01(v / work);
-        }
+        var stage = (Target.Plan && Target.CurrentStageIndex < Target.Plan.Stages.Count)
+            ? Target.Plan.Stages[Target.CurrentStageIndex]
+            : null;
+
+        float work = (stage != null) ? Mathf.Max(0.0001f, stage.WorkAmount) : 1f;
+        ProgressBar.value = Mathf.Clamp01(v / work);
     }
 
     public void Refresh()
     {
-        if (!Target) return;
+        if (!Target)
+        {
+            SetAllPlaceholders();
+            if (StageTitle) StageTitle.text = "-";
+            if (ProgressBar) ProgressBar.value = 0f;
+            return;
+        }
 
-        // Заголовок — используем Title из ConstructionStage
+        // Заголовок
         if (StageTitle)
         {
             var stage = (Target.Plan && Target.CurrentStageIndex < Target.Plan.Stages.Count)
@@ -59,31 +69,39 @@ public class BuildPanelUI : MonoBehaviour
             StageTitle.text = stage ? stage.Title : "Завершено";
         }
 
-        // Очистить список ресурсов
-        if (ResourceListRoot)
-        {
-            for (int i = ResourceListRoot.childCount - 1; i >= 0; i--)
-                Destroy(ResourceListRoot.GetChild(i).gameObject);
-        }
-
-        // Заполнить ресурсами (берём строки для UI, которые не убывают в Batch)
+        // Соберём данные этапа
+        var data = new List<BuildSite.StageResourceUI>();
         foreach (var rowData in Target.GetStageUIRows())
+            data.Add(rowData);
+
+        // Заполняем первые N строк данными, остальные — placeholder
+        int n = Rows.Count;
+        for (int i = 0; i < n; i++)
         {
-            var go = Instantiate(ResourceRowPrefab, ResourceListRoot);
-            var row = go.GetComponent<ResourceRowUI>();
+            var row = Rows[i];
+            if (!row) continue;
 
-            // Если у тебя Bind(res, required, current) — передаём deliveredUI
-            row.Bind(rowData.res, rowData.required, rowData.deliveredUI);
-
-            // Если у тебя есть перегрузка с "в пути", можно вместо этого:
-            // row.Bind(rowData.res, rowData.required, rowData.deliveredUI, rowData.inTransit);
+            if (i < data.Count)
+            {
+                var d = data[i];
+                row.Bind(d.res, d.required, d.deliveredUI /*, d.inTransit*/);
+            }
+            else
+            {
+                row.SetPlaceholder(true);
+            }
         }
 
-        // Обновить прогресс
         OnProgressChanged(Target.StageProgress);
     }
 
-    // Кнопка из UI (опционально)
+    void SetAllPlaceholders()
+    {
+        foreach (var r in Rows)
+            if (r) r.SetPlaceholder(true);
+    }
+
+    // Кнопка (опц.)
     public void TogglePause()
     {
         if (!Target) return;

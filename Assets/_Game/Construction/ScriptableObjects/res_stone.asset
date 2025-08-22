@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Id: stone
   DisplayName: Stone
-  Icon: {fileID: 0}
+  Icon: {fileID: 21300000, guid: b3ef2a806eba6465aac0df105f523b1c, type: 3}
   CarryProp: {fileID: 8330445290505275631, guid: a8b685ac546344bbd900c8d7980330c3, type: 3}
   UnitMass: 1

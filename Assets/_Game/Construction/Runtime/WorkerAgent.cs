@@ -17,6 +17,12 @@ public class WorkerAgent : MonoBehaviour
     public NavMeshAgent Agent;
     public Transform HandCarrySocket;
     public WorkerCarryController CarryController;
+    public ResourceDef CurrentCarryResource => _carryingRes;
+public bool IsCarrying => _carryPropInstance != null;
+// ДОБАВЬ рядом с другими ссылками вверху класса
+public Animator AnimatorFallback;            // опционально, если нет CarryController
+public string CarryBoolParam = "Carry";      // имя bool-параметра в контроллере
+
 
 
     // Runtime
@@ -295,37 +301,72 @@ void PickupProp(ResourceDef res) {
 
     void AttachCarryProp(ResourceDef res)
 {
-    // проп берём как и раньше — у тебя логика спавна уже есть
     if (!res) return;
-    if (!HandCarrySocket) return;
 
-    // у ресурса должен быть CarryProp (иначе только анимация без визуала)
-    GameObject prefab = res.CarryProp;
-    if (!prefab)
+    // 1) Сначала пробуем забрать готовый проп со склада (палеты)
+    GameObject picked = null;
+    if (palletGroup)
     {
-        // можно включить только анимацию
-        if (CarryController && CarryController.animator)
+        var pallet = palletGroup.GetPalletFor(res);
+        if (pallet)
         {
-            CarryController.Attach(null);
-            if (Agent) Agent.speed = CarryController.currentMoveMul * WalkSpeed;
+            var slots = pallet.GetComponent<ResourcePalletSlots>();
+            if (slots)
+                picked = slots.Take(); // может вернуть null, если слоты пустые
         }
-        return;
     }
 
-    _carryPropInstance = Instantiate(prefab);
+    // 2) Fallback — если палета пустая, просто инстанцируем CarryProp
+    if (!picked)
+    {
+        var prefab = res.CarryProp;
+        if (prefab)
+            picked = Instantiate(prefab);
+        else
+        {
+            // Совсем без визуала — включим только анимацию переноса
+            if (CarryController)
+            {
+                CarryController.Attach(null);
+            }
+            else if (AnimatorFallback && !string.IsNullOrEmpty(CarryBoolParam))
+            {
+                AnimatorFallback.SetBool(CarryBoolParam, true);
+            }
+            // скорость подправим, если есть CarryController
+            if (CarryController && Agent) Agent.speed = CarryController.currentMoveMul * WalkSpeed;
+            return;
+        }
+    }
+
+    _carryPropInstance = picked;
+
+    // 3) Гарантируем, что на объекте есть CarryPropTag с текущим ресурсом
+    var tag = _carryPropInstance.GetComponent<CarryPropTag>();
+    if (!tag) tag = _carryPropInstance.AddComponent<CarryPropTag>();
+    tag.resource = res;
+
+    // 4) Включаем анимацию переноса и сажаем проп в руку
     if (CarryController)
     {
-        CarryController.Attach(_carryPropInstance);
+        CarryController.Attach(_carryPropInstance); // сам установит позицию/поворот по CarryGrip и включит аниматор
         if (Agent) Agent.speed = CarryController.currentMoveMul * WalkSpeed;
     }
     else
     {
-        // fallback: просто прицепить к сокету без анимации и оффсетов
-        _carryPropInstance.transform.SetParent(HandCarrySocket);
-        _carryPropInstance.transform.localPosition = Vector3.zero;
-        _carryPropInstance.transform.localRotation = Quaternion.identity;
+        // Фоллбэк: просто прицепим к сокету и включим bool на аниматоре
+        if (HandCarrySocket)
+        {
+            _carryPropInstance.transform.SetParent(HandCarrySocket, false);
+            _carryPropInstance.transform.localPosition = Vector3.zero;
+            _carryPropInstance.transform.localRotation = Quaternion.identity;
+        }
+
+        if (AnimatorFallback && !string.IsNullOrEmpty(CarryBoolParam))
+            AnimatorFallback.SetBool(CarryBoolParam, true);
     }
 }
+
 
 
 

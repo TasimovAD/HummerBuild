@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8197935676100371025}
   - component: {fileID: 5342190671605483887}
   - component: {fileID: -8285956611025114805}
+  - component: {fileID: -865278352967041729}
   m_Layer: 0
   m_Name: water_carry
   m_TagString: Untagged
@@ -153,3 +154,16 @@ MonoBehaviour:
   playerSpeedMul: 0.2
   workerSpeedMul: 0.5
   moveSpeedMul: 0.2
+--- !u!114 &-865278352967041729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 77405805825056359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91dd40534a6c2430498224805c6c8edd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resource: {fileID: 11400000, guid: 4f930763202804e3f9035877bf12b9c2, type: 2}

@@ -1,3 +1,4 @@
+// Assets/_Game/Construction/Runtime/ResourcePalletSlots.cs
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -15,20 +16,17 @@ public class ResourcePalletSlots : MonoBehaviour
     public bool AutoFindSlots = true;
 
     private readonly List<Transform> _slots = new();
-    // слот → объект (так надёжнее, чем просто список)
-    private readonly Dictionary<Transform, GameObject> _placed = new();
+    private readonly List<GameObject> _spawned = new();
 
     void Awake()
     {
         if (AutoFindSlots) FindSlots();
     }
 
-    /// Собирает детей SlotRoot с именами Slot_0, Slot_1...
-    [ContextMenu("Find Slots")]
+    /// Собирает детей SlotRoot с именами Slot_...
     public void FindSlots()
     {
         _slots.Clear();
-        _placed.Clear();
 
         if (SlotRoot == null)
         {
@@ -45,12 +43,12 @@ public class ResourcePalletSlots : MonoBehaviour
 
     public void ClearAll()
     {
-        foreach (var kv in _placed)
-            if (kv.Value) Destroy(kv.Value);
-        _placed.Clear();
+        foreach (var go in _spawned)
+            if (go) Destroy(go);
+        _spawned.Clear();
     }
 
-    /// Полная перестройка палеты под нужное количество (инстанс по префабу)
+    /// Полная перестройка палеты под нужное количество (спавн из префаба)
     public void Rebuild(int count, GameObject prefab)
     {
         ClearAll();
@@ -74,48 +72,56 @@ public class ResourcePalletSlots : MonoBehaviour
             var slot = _slots[i];
             var go = Instantiate(p, slot.position, slot.rotation, slot);
             go.name = $"{(Resource ? Resource.Id : p.name)}_{i}";
-            _placed[slot] = go;
+            _spawned.Add(go);
         }
     }
 
-    /// Удобная перегрузка, если хочешь вызвать Rebuild только с количеством
+    /// Удобная перегрузка (префаб берём из Resource или DefaultPrefab)
     public void Rebuild(int count)
     {
         Rebuild(count, Resource != null ? Resource.CarryProp : DefaultPrefab);
     }
 
-    /// Положить УЖЕ СУЩЕСТВУЮЩИЙ объект в первый свободный слот
-    public bool TryAdd(GameObject go)
-    {
-        if (!go) return false;
-
-        for (int i = 0; i < _slots.Count; i++)
-        {
-            var slot = _slots[i];
-            if (!_placed.TryGetValue(slot, out var cur) || cur == null)
-            {
-                go.transform.SetParent(slot, false);
-                go.transform.localPosition = Vector3.zero;
-                go.transform.localRotation = Quaternion.identity;
-                _placed[slot] = go;
-                return true;
-            }
-        }
-        return false; // нет свободных слотов
-    }
-
-    /// Взять 1 объект со слотов
+    /// Взять 1 объект с палеты
     public GameObject Take()
     {
+        if (_spawned.Count == 0) return null;
+
+        var go = _spawned[0];
+        _spawned.RemoveAt(0);
+        if (go) go.transform.SetParent(null);
+        return go;
+    }
+
+    /// Положить готовый созданный объект в первый свободный слот.
+    /// Возвращает true, если положили; объект становится child слота.
+    public bool TryAdd(GameObject prop)
+    {
+        if (!prop) return false;
+
+        // найти первый свободный слот — т.е. слот без занятого дочернего из _spawned
+        // простая логика: слот свободен, если в списке _spawned нет объекта с этим слотом-родителем
         foreach (var slot in _slots)
         {
-            if (_placed.TryGetValue(slot, out var go) && go != null)
+            bool occupied = false;
+            for (int i = 0; i < _spawned.Count; i++)
             {
-                _placed[slot] = null;
-                go.transform.SetParent(null, true);
-                return go;
+                if (_spawned[i] && _spawned[i].transform.parent == slot)
+                {
+                    occupied = true;
+                    break;
+                }
             }
+            if (occupied) continue;
+
+            // положить
+            prop.transform.SetParent(slot, worldPositionStays: false);
+            prop.transform.localPosition = Vector3.zero;
+            prop.transform.localRotation = Quaternion.identity;
+            _spawned.Add(prop);
+            return true;
         }
-        return null;
+
+        return false; // нет свободных слотов
     }
 }

@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 8341154554236457236}
   - component: {fileID: 2666426939773804633}
   - component: {fileID: -6392632006595539999}
+  - component: {fileID: 7330697293132335326}
   m_Layer: 0
   m_Name: log_carry
   m_TagString: Untagged
@@ -154,6 +155,19 @@ MonoBehaviour:
   playerSpeedMul: 0.2
   workerSpeedMul: 0.5
   moveSpeedMul: 0.2
+--- !u!114 &7330697293132335326
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5885690783159889269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91dd40534a6c2430498224805c6c8edd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resource: {fileID: 11400000, guid: 47856579e5855496fbf6a529f1ee1463, type: 2}
 --- !u!1 &8554922292984452821
 GameObject:
   m_ObjectHideFlags: 0
