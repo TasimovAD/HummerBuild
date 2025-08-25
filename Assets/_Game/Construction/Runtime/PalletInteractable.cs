@@ -10,7 +10,8 @@ public class PalletInteractable : MonoBehaviour
     {
         VisualOnly,     // только визуал (не пишет в инвентарь)
         Storage,        // связан со складским InventoryProviderAdapter (склад базы)
-        BuildBuffer     // связан с буфером стройплощадки (BuildSite.Buffer)
+        BuildBuffer,     // связан с буфером стройплощадки (BuildSite.Buffer)
+        Shop
     }
 
     [Header("Связи")]

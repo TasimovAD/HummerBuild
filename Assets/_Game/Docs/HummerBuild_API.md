@@ -1,5 +1,5 @@
 ﻿# HummerBuild API Manifest
-_Generated: 2025-08-20 21:06_
+_Generated: 2025-08-23 00:47_
 
 ## Assembly: `Assembly-CSharp-Editor`
 
@@ -837,6 +837,18 @@ _ScriptableObject_
 
 ## Assembly: `Assembly-CSharp`
 
+### AnimatorLayerWeightDriver
+_MonoBehaviour_
+
+**Fields**:
+- `public Animator animator`
+- `public String carryBoolParam`
+- `public String carryMoveBoolParam`
+- `public String layerName`
+- `public Single lerpSpeed`
+
+---
+
 ### BCG_DemoScenes
 _ScriptableObject_
 
@@ -1094,9 +1106,9 @@ _ScriptableObject_
 _MonoBehaviour_
 
 **Fields**:
+- `public Boolean FillLeftToRight`
 - `public Slider ProgressBar`
-- `public Transform ResourceListRoot`
-- `public GameObject ResourceRowPrefab`
+- `public List`1 Rows`
 - `public TMP_Text StageTitle`
 - `public BuildSite Target`
 
@@ -1182,6 +1194,30 @@ _MonoBehaviour_
 - `Void EnterCar()`
 - `Void ExitCar()`
 - `Void ShowEnterButton(Boolean show)`
+
+---
+
+### CarryGrip
+_MonoBehaviour_
+
+**Fields**:
+- `public Transform leftHandIKTarget`
+- `public Vector3 localEulerAngles`
+- `public Vector3 localPosition`
+- `public Vector3 localScale`
+- `public Single playerSpeedMul`
+- `public Transform rightHandIKTarget`
+- `public CarryStyle style`
+- `public Single workerSpeedMul`
+- `[SerializeField] Single moveSpeedMul`
+
+---
+
+### CarryPropTag
+_MonoBehaviour_
+
+**Fields**:
+- `public ResourceDef resource`
 
 ---
 
@@ -1305,6 +1341,16 @@ _MonoBehaviour_
 
 ---
 
+### InvectorCarrySpeedAdapter
+_MonoBehaviour_
+
+**Fields**:
+- `public Single blendSpeed`
+- `public PlayerCarryController carry`
+- `public vThirdPersonController invectorTPC`
+
+---
+
 ### InvectorJoystick
 _MonoBehaviour_
 
@@ -1412,7 +1458,32 @@ _MonoBehaviour_
 - `public List`1 pallets`
 
 **Methods**:
+- `Void ClearAll()`
+- `GameObject GetPalletFor(ResourceDef res)`
+- `Void RebuildAll()`
 - `GameObject Take(ResourceDef res)`
+
+---
+
+### PalletInteractable
+_MonoBehaviour_
+
+**Fields**:
+- `public PalletKind kind`
+- `public InventoryProviderAdapter linkedInventory`
+- `public ResourcePalletSlots slots`
+
+**Methods**:
+- `Boolean TryPutOne(GameObject prop)`
+- `Boolean TryTakeOne(GameObject& prop)`
+
+---
+
+### PalletTester
+_MonoBehaviour_
+
+**Fields**:
+- `public ResourcePalletSlots palletSlots`
 
 ---
 
@@ -1425,6 +1496,93 @@ _MonoBehaviour_
 **Methods**:
 - `Void Release(Transform slot)`
 - `Boolean TryAcquire(Transform& slot)`
+
+---
+
+### PlayerCarry
+_MonoBehaviour_
+
+**Fields**:
+- `public Transform handSocket`
+
+**Properties**:
+- `public GameObject CarriedGO { get; set; }`
+- `public ResourceDef CarriedRes { get; set; }`
+- `public Boolean IsEmpty { get; set; }`
+
+**Methods**:
+- `Void ClearHand()`
+- `Boolean Pickup(ResourceDef res)`
+
+---
+
+### PlayerCarryAnimDriver
+_MonoBehaviour_
+
+**Fields**:
+- `public Animator animator`
+- `public String carryParam`
+- `public Transform handCarrySocket`
+
+**Methods**:
+- `Void ForceSetCarry(Boolean value)`
+
+---
+
+### PlayerCarryController
+_MonoBehaviour_
+
+**Fields**:
+- `public Animator animator`
+- `public Single baseMoveSpeedMul`
+- `public String carryBoolParam`
+- `public String carryTypeParam`
+- `public Transform handSocket`
+
+**Properties**:
+- `public CarryGrip CurrentGrip { get; set; }`
+- `public Single currentMoveMul { get; set; }`
+- `public GameObject CurrentProp { get; set; }`
+- `public Boolean IsCarrying { get; set; }`
+
+**Methods**:
+- `Boolean Attach(GameObject prop)`
+- `GameObject Detach()`
+
+---
+
+### PlayerCarryPickup
+_MonoBehaviour_
+
+**Fields**:
+- `public String carryTag`
+- `public Transform handCarrySocket`
+
+**Properties**:
+- `public Boolean HasItemInHand { get; set; }`
+
+**Methods**:
+- `Boolean AttachToHand(GameObject target, Vector3 localPos, Vector3 localEuler, Vector3 localScale)`
+- `GameObject DetachFromHand(Vector3 dropWorldPos, Quaternion dropWorldRot, Boolean enablePhysics)`
+- `Boolean TryPickupNearest(Single radius)`
+
+---
+
+### PlayerInteractorMobile
+_MonoBehaviour_
+
+**Fields**:
+- `public Camera cam`
+- `public PlayerCarryController carry`
+- `public GameObject dropButton`
+- `public Single fallbackRadius`
+- `public Single interactDistance`
+- `public LayerMask interactMask`
+- `public GameObject pickButton`
+
+**Methods**:
+- `Void OnDropButton()`
+- `Void OnPickButton()`
 
 ---
 
@@ -4278,6 +4436,25 @@ _MonoBehaviour_
 
 ---
 
+### ResourcePalletSlots
+_MonoBehaviour_
+
+**Fields**:
+- `public Boolean AutoFindSlots`
+- `public GameObject DefaultPrefab`
+- `public ResourceDef Resource`
+- `public Transform SlotRoot`
+
+**Methods**:
+- `Void ClearAll()`
+- `Void FindSlots()`
+- `Void Rebuild(Int32 count, GameObject prefab)`
+- `Void Rebuild(Int32 count)`
+- `GameObject Take()`
+- `Boolean TryAdd(GameObject prop)`
+
+---
+
 ### ResourcePickup
 _MonoBehaviour_
 
@@ -4306,12 +4483,19 @@ _ScriptableObject_
 _MonoBehaviour_
 
 **Fields**:
-- `public TMP_Text CountText`
 - `public Image Icon`
+- `public TMP_Text InTransitText`
 - `public TMP_Text NameText`
+- `public Color NormalColor`
+- `public Single PlaceholderAlpha`
+- `public Color PlaceholderColor`
+- `public Sprite PlaceholderIcon`
+- `public String PlaceholderName`
+- `public TMP_Text ProgressText`
 
 **Methods**:
-- `Void Bind(ResourceDef res, Int32 required, Int32 deliveredUI, Int32 inTransit)`
+- `Void Bind(ResourceDef res, Int32 required, Int32 delivered, Int32 inTransit)`
+- `Void SetPlaceholder(Boolean on)`
 
 ---
 
@@ -4846,14 +5030,21 @@ _MonoBehaviour_
 
 **Fields**:
 - `public NavMeshAgent Agent`
+- `public Animator AnimatorFallback`
 - `public Single BuildSpeedFactor`
+- `public String CarryBoolParam`
 - `public Int32 CarryCapacityKg`
+- `public WorkerCarryController CarryController`
 - `public Transform HandCarrySocket`
 - `public Transform handSocket`
 - `public PalletGroupManager palletGroup`
 - `public WorkerRole Role`
 - `public Single WagePerMinute`
 - `public Single WalkSpeed`
+
+**Properties**:
+- `public ResourceDef CurrentCarryResource { get; set; }`
+- `public Boolean IsCarrying { get; set; }`
 
 ---
 
@@ -4864,6 +5055,52 @@ _MonoBehaviour_
 - `public NavMeshAgent agent`
 - `public Animator animator`
 - `public String speedParam`
+
+---
+
+### WorkerCarryController
+_MonoBehaviour_
+
+**Fields**:
+- `public Animator animator`
+- `public Single baseMoveSpeedMul`
+- `public String carryBoolParam`
+- `public String carryTypeParam`
+- `public Transform handSocket`
+
+**Properties**:
+- `public CarryGrip CurrentGrip { get; set; }`
+- `public Single currentMoveMul { get; set; }`
+- `public GameObject CurrentProp { get; set; }`
+- `public Boolean IsCarrying { get; set; }`
+
+**Methods**:
+- `Void Attach(GameObject prop)`
+- `Void Detach()`
+
+---
+
+### WorkerStatusUI
+_MonoBehaviour_
+
+**Fields**:
+- `public Sprite buildSprite`
+- `public Sprite carryFallbackSprite`
+- `public String DisplayName`
+- `public Single heightOffset`
+- `public Vector2 iconSize`
+- `public Sprite idleSprite`
+- `public Transform lookAtTargetOverride`
+- `public Color nameColor`
+- `public Font nameFont`
+- `public Int32 nameFontSize`
+- `public Camera playerCamera`
+- `public Single refreshPeriod`
+
+**Methods**:
+- `Void SetLookAtTarget(Transform t)`
+- `Void SetName(String newName)`
+- `Void SetPlayerCamera(Camera cam)`
 
 ---
 
