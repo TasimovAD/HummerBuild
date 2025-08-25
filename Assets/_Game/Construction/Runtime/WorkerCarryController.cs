@@ -89,8 +89,12 @@ public class WorkerCarryController : MonoBehaviour
 
         if (CurrentProp)
         {
-            foreach (var c in CurrentProp.GetComponentsInChildren<Collider>()) c.enabled = true;
-            CurrentProp.transform.SetParent(null);
+            // ВАЖНО: проверяем, что объект все еще существует и прикреплен
+            if (CurrentProp.transform.parent == handSocket)
+            {
+                foreach (var c in CurrentProp.GetComponentsInChildren<Collider>()) c.enabled = true;
+                CurrentProp.transform.SetParent(null);
+            }
         }
 
         CurrentProp = null;

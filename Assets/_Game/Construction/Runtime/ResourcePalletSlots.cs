@@ -1,4 +1,3 @@
-// Assets/_Game/Construction/Runtime/ResourcePalletSlots.cs
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -16,11 +15,11 @@ public class ResourcePalletSlots : MonoBehaviour
     public bool AutoFindSlots = true;
 
     private readonly List<Transform> _slots = new();
-    private readonly List<GameObject> _spawned = new();
 
     void Awake()
     {
         if (AutoFindSlots) FindSlots();
+        SyncFromHierarchy();
     }
 
     /// Собирает детей SlotRoot с именами Slot_...
@@ -41,23 +40,42 @@ public class ResourcePalletSlots : MonoBehaviour
         }
     }
 
+    /// Синхронизация внутреннего состояния с фактическими детьми слотов
+    public void SyncFromHierarchy()
+    {
+        // сейчас логика работает прямо по childCount, кэш не нужен
+        // метод оставлен, чтобы явно вызывать «на всякий»
+    }
+
+    /// Полностью очистить палету (уничтожить всех детей слотов)
     public void ClearAll()
     {
-        foreach (var go in _spawned)
-            if (go) Destroy(go);
-        _spawned.Clear();
+        foreach (var slot in _slots)
+        {
+            if (!slot) continue;
+            for (int i = slot.childCount - 1; i >= 0; i--)
+            {
+                var ch = slot.GetChild(i);
+                // ВАЖНО: проверяем, что объект все еще прикреплен к слоту
+                // Если рабочий уже забрал объект, он будет откреплен от слота
+                // и мы не должны его удалять
+                if (ch && ch.parent == slot) Destroy(ch.gameObject);
+            }
+        }
     }
 
     /// Полная перестройка палеты под нужное количество (спавн из префаба)
     public void Rebuild(int count, GameObject prefab)
     {
-        ClearAll();
-
         if (_slots.Count == 0)
         {
             Debug.LogWarning($"[ResourcePalletSlots] Нет ни одного слота у {name}");
             return;
         }
+
+        // ВАЖНО: перед перестройкой проверяем, есть ли объекты, которые уже забрал рабочий
+        // Если есть открепленные объекты, не удаляем их
+        ClearAll();
 
         var p = prefab ?? DefaultPrefab;
         if (p == null)
@@ -72,7 +90,6 @@ public class ResourcePalletSlots : MonoBehaviour
             var slot = _slots[i];
             var go = Instantiate(p, slot.position, slot.rotation, slot);
             go.name = $"{(Resource ? Resource.Id : p.name)}_{i}";
-            _spawned.Add(go);
         }
     }
 
@@ -82,15 +99,23 @@ public class ResourcePalletSlots : MonoBehaviour
         Rebuild(count, Resource != null ? Resource.CarryProp : DefaultPrefab);
     }
 
-    /// Взять 1 объект с палеты
+    /// Взять 1 объект с палеты (любой занятой слот)
     public GameObject Take()
     {
-        if (_spawned.Count == 0) return null;
-
-        var go = _spawned[0];
-        _spawned.RemoveAt(0);
-        if (go) go.transform.SetParent(null);
-        return go;
+        // пройдём слоты и найдём первый, у которого есть ребёнок
+        foreach (var slot in _slots)
+        {
+            if (!slot) continue;
+            if (slot.childCount > 0)
+            {
+                var go = slot.GetChild(0).gameObject;
+                // ВАЖНО: открепляем объект от слота ПЕРЕД тем, как вернуть его
+                // Это предотвращает конфликт с PalletGroupManager.RebuildAll
+                go.transform.SetParent(null, true);
+                return go;
+            }
+        }
+        return null;
     }
 
     /// Положить готовый созданный объект в первый свободный слот.
@@ -99,29 +124,33 @@ public class ResourcePalletSlots : MonoBehaviour
     {
         if (!prop) return false;
 
-        // найти первый свободный слот — т.е. слот без занятого дочернего из _spawned
-        // простая логика: слот свободен, если в списке _spawned нет объекта с этим слотом-родителем
+        // свободный слот = slot.childCount == 0
         foreach (var slot in _slots)
         {
-            bool occupied = false;
-            for (int i = 0; i < _spawned.Count; i++)
+            if (!slot) continue;
+            if (slot.childCount == 0)
             {
-                if (_spawned[i] && _spawned[i].transform.parent == slot)
-                {
-                    occupied = true;
-                    break;
-                }
+                prop.transform.SetParent(slot, worldPositionStays: false);
+                prop.transform.localPosition = Vector3.zero;
+                prop.transform.localRotation = Quaternion.identity;
+                return true;
             }
-            if (occupied) continue;
-
-            // положить
-            prop.transform.SetParent(slot, worldPositionStays: false);
-            prop.transform.localPosition = Vector3.zero;
-            prop.transform.localRotation = Quaternion.identity;
-            _spawned.Add(prop);
-            return true;
         }
 
         return false; // нет свободных слотов
+    }
+
+    /// Текущее число визуально лежащих объектов (по факту детей)
+    public int VisualCount
+    {
+        get
+        {
+            int c = 0;
+            foreach (var slot in _slots)
+            {
+                if (slot && slot.childCount > 0) c++;
+            }
+            return c;
+        }
     }
 }

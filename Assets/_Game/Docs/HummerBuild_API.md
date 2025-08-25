@@ -1,5 +1,5 @@
 ﻿# HummerBuild API Manifest
-_Generated: 2025-08-23 00:47_
+_Generated: 2025-08-26 01:22_
 
 ## Assembly: `Assembly-CSharp-Editor`
 
@@ -1469,9 +1469,11 @@ _MonoBehaviour_
 _MonoBehaviour_
 
 **Fields**:
-- `public PalletKind kind`
 - `public InventoryProviderAdapter linkedInventory`
 - `public ResourcePalletSlots slots`
+- `public Boolean strictMatch`
+- `public Single warningLifetime`
+- `public TextMeshProUGUI warningText`
 
 **Methods**:
 - `Boolean TryPutOne(GameObject prop)`
@@ -1484,6 +1486,15 @@ _MonoBehaviour_
 
 **Fields**:
 - `public ResourcePalletSlots palletSlots`
+
+---
+
+### PalletUseZone
+_MonoBehaviour_
+
+**Fields**:
+- `public PalletInteractable Pallet`
+- `public PlayerCarryController PlayerCarry`
 
 ---
 
@@ -1575,6 +1586,8 @@ _MonoBehaviour_
 - `public Camera cam`
 - `public PlayerCarryController carry`
 - `public GameObject dropButton`
+- `public Single errorShowSeconds`
+- `public TMP_Text errorText`
 - `public Single fallbackRadius`
 - `public Single interactDistance`
 - `public LayerMask interactMask`
@@ -4445,11 +4458,15 @@ _MonoBehaviour_
 - `public ResourceDef Resource`
 - `public Transform SlotRoot`
 
+**Properties**:
+- `public Int32 VisualCount { get; set; }`
+
 **Methods**:
 - `Void ClearAll()`
 - `Void FindSlots()`
 - `Void Rebuild(Int32 count, GameObject prefab)`
 - `Void Rebuild(Int32 count)`
+- `Void SyncFromHierarchy()`
 - `GameObject Take()`
 - `Boolean TryAdd(GameObject prop)`
 
@@ -4517,6 +4534,50 @@ _MonoBehaviour_
 
 **Fields**:
 - `public Vector3 Speed`
+
+---
+
+### ShopPanelSimple
+_MonoBehaviour_
+
+**Fields**:
+- `public Button buyButton`
+- `public String moneySuffix`
+- `public Wallet playerWallet`
+- `public ShopResourceRow rowConcrete`
+- `public ShopResourceRow rowSand`
+- `public ShopResourceRow rowStone`
+- `public ShopResourceRow rowWater`
+- `public ShopResourceRow rowWood`
+- `public InventoryProviderAdapter storeAdapter`
+- `public StorageInventory storeStorage`
+- `public TMP_Text totalText`
+
+---
+
+### ShopResourceRow
+_MonoBehaviour_
+
+**Fields**:
+- `public TMP_Text countText`
+- `public Image iconImage`
+- `public Int32 maxCount`
+- `public Int32 minCount`
+- `public Button minusBtn`
+- `public TMP_Text nameText`
+- `public Action`1 onChanged`
+- `public Button plusBtn`
+- `public ResourceDef resource`
+- `public Int32 unitPrice`
+
+**Properties**:
+- `public Int32 Count { get; set; }`
+- `public Int32 Subtotal { get; set; }`
+
+**Methods**:
+- `Void Bind(ResourceDef def, Int32 price)`
+- `Void ResetToZero()`
+- `Void SetCount(Int32 value, Boolean silent)`
 
 ---
 
@@ -4614,6 +4675,30 @@ _MonoBehaviour_
 
 **Methods**:
 - `Void SeedNow()`
+
+---
+
+### StoreCatalog
+_MonoBehaviour_
+
+**Fields**:
+- `public List`1 Prices`
+
+**Methods**:
+- `StorePrice Get(ResourceDef r)`
+
+---
+
+### StoreStation
+_MonoBehaviour_
+
+**Fields**:
+- `public StoreCatalog Catalog`
+- `public InventoryProviderAdapter StoreInventory`
+- `public PalletGroupManager StorePallets`
+
+**Methods**:
+- `Boolean TryBuy(ResourceDef res, Int32 units, WalletPlayer buyerWallet)`
 
 ---
 
@@ -4746,6 +4831,15 @@ _MonoBehaviour_
 
 **Methods**:
 - `Void Unload()`
+
+---
+
+### TrunkInventoryBootstrap
+_MonoBehaviour_
+
+**Fields**:
+- `public InventoryProviderAdapter TrunkInventory`
+- `public PalletInteractable TrunkPallet`
 
 ---
 
@@ -5025,6 +5119,21 @@ _MonoBehaviour_
 
 ---
 
+### WalletPlayer
+_MonoBehaviour_
+
+**Fields**:
+- `[SerializeField] Int32 _money`
+
+**Properties**:
+- `public Int32 Money { get; set; }`
+
+**Methods**:
+- `Void Add(Int32 amount)`
+- `Boolean TrySpend(Int32 amount)`
+
+---
+
 ### WorkerAgent
 _MonoBehaviour_
 
@@ -5036,7 +5145,6 @@ _MonoBehaviour_
 - `public Int32 CarryCapacityKg`
 - `public WorkerCarryController CarryController`
 - `public Transform HandCarrySocket`
-- `public Transform handSocket`
 - `public PalletGroupManager palletGroup`
 - `public WorkerRole Role`
 - `public Single WagePerMinute`

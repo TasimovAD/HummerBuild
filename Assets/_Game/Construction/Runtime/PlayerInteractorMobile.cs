@@ -1,7 +1,8 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
-/// Версия под мобильную кнопку: показывает Pick/Drop по контексту.
-/// Работает с PlayerCarryController и PalletInteractable (slots).
+/// Версия под мобильные кнопки: Pick/Drop + сообщение об ошибке
 public class PlayerInteractorMobile : MonoBehaviour
 {
     [Header("Поиск цели")]
@@ -11,13 +12,16 @@ public class PlayerInteractorMobile : MonoBehaviour
     public LayerMask interactMask = ~0;
 
     [Header("Refs")]
-    public PlayerCarryController carry;
-    public GameObject pickButton;   // “Взять”
-    public GameObject dropButton;   // “Положить”
+    public PlayerCarryController carry; // контроллер переноски игрока
+    public GameObject pickButton;       // “Взять”
+    public GameObject dropButton;       // “Положить”
+
+    [Header("UI Сообщения")]
+    public TMP_Text errorText;          // куда выводим “Тут хранится другой ресурс”
+    public float errorShowSeconds = 1.5f;
 
     PalletInteractable _currentTarget;
-
-    
+    float _errorHideAt = -1f;
 
     void Reset()
     {
@@ -27,26 +31,33 @@ public class PlayerInteractorMobile : MonoBehaviour
 
     void Update()
     {
+        // авто-скрытие сообщения
+        if (errorText && _errorHideAt > 0 && Time.unscaledTime >= _errorHideAt)
+        {
+            errorText.gameObject.SetActive(false);
+            _errorHideAt = -1f;
+        }
+
+        // ищем ближайшую палету
         _currentTarget = null;
         TryFindTarget(out _currentTarget);
 
-        bool canPick = !carry || !carry.IsCarrying ? _currentTarget != null : false;
-        bool canDrop =  carry && carry.IsCarrying  ? _currentTarget != null : false;
+        bool canPick = (!carry || !carry.IsCarrying) && _currentTarget != null;
+        bool canDrop = (carry && carry.IsCarrying) && _currentTarget != null;
 
         if (pickButton) pickButton.SetActive(canPick);
         if (dropButton) dropButton.SetActive(canDrop);
-
-        
     }
 
-    // === UI callbacks ===
+    // ==== Кнопки ====
+
     public void OnPickButton()
     {
         if (carry == null || carry.IsCarrying || _currentTarget == null) return;
 
         if (_currentTarget.TryTakeOne(out var prop))
         {
-            carry.Attach(prop); // аниматор сам включится
+            carry.Attach(prop); // аниматор включится сам
         }
     }
 
@@ -54,26 +65,33 @@ public class PlayerInteractorMobile : MonoBehaviour
     {
         if (carry == null || !carry.IsCarrying || _currentTarget == null) return;
 
-        var held = carry.Detach(); // вернёт объект и выключит аниматор
+        // ВАЖНО: не отцепляем заранее! Берём ссылку на объект в руках
+        var held = carry.CurrentProp;
         if (!held) return;
 
-        // положим в палету; если не получилось — просто бросим рядом
-        if (!_currentTarget.TryPutOne(held))
+        // Пытаемся положить в палету напрямую
+        bool ok = _currentTarget.TryPutOne(held);
+
+        if (ok)
         {
-            // запасной дроп на пол
-            held.transform.position = transform.position + transform.forward * 0.8f + Vector3.up * 0.3f;
-            if (!held.TryGetComponent<Rigidbody>(out var rb)) rb = held.AddComponent<Rigidbody>();
-            rb.mass = 5f;
+            // Только при успехе отцепляем из рук (иконки/аниматор выключатся внутри Detach)
+            carry.Detach();
+        }
+        else
+        {
+            // Палета не подходит (другой ресурс / нет слотов) — оставляем в руках и покажем текст
+            ShowError("Тут хранится другой ресурс");
         }
     }
 
-    // === поиск палеты ===
+    // ==== Поиск палеты ====
     bool TryFindTarget(out PalletInteractable pallet)
     {
         pallet = null;
         if (!cam) cam = Camera.main;
         if (!cam) return false;
 
+        // 1) Лучом из центра экрана
         Ray r = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         if (Physics.Raycast(r, out var hit, interactDistance, interactMask, QueryTriggerInteraction.Collide))
         {
@@ -81,6 +99,7 @@ public class PlayerInteractorMobile : MonoBehaviour
             if (pallet) return true;
         }
 
+        // 2) Поиск ближайшего в радиусе
         var cols = Physics.OverlapSphere(transform.position, fallbackRadius, interactMask, QueryTriggerInteraction.Collide);
         float best = float.MaxValue;
         PalletInteractable bestPal = null;
@@ -98,10 +117,19 @@ public class PlayerInteractorMobile : MonoBehaviour
         return pallet != null;
     }
 
+    // ==== Сообщение об ошибке ====
+    void ShowError(string msg)
+    {
+        if (!errorText) return;
+        errorText.text = msg;
+        errorText.gameObject.SetActive(true);
+        _errorHideAt = Time.unscaledTime + errorShowSeconds;
+    }
+
 #if UNITY_EDITOR
     void OnDrawGizmosSelected()
     {
-        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
+        Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.25f);
         Gizmos.DrawWireSphere(transform.position, fallbackRadius);
     }
 #endif

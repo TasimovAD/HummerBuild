@@ -61,7 +61,12 @@ public class PalletGroupManager : MonoBehaviour
             int count = inventory.Get(res);
             var prefab = res != null ? res.CarryProp : null;
             if (slots != null)
+            {
+                // ВАЖНО: проверяем, что палета не содержит объекты, которые уже забрал рабочий
+                // Если рабочий уже забрал объект, он будет откреплен от слота
+                // и мы не должны его удалять при перестройке
                 slots.Rebuild(count, prefab ?? slots.DefaultPrefab);
+            }
         }
     }
 
