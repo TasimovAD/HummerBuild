@@ -2,7 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// Простая система багажника ТОЛЬКО с ручным взаимодействием игрока.
-/// Без автоматической выгрузки и зон передачи.
+/// Без автоматической выгрузки и зон передачи + визуализация ресурсов.
 /// </summary>
 public class SimpleTrunkOnly : MonoBehaviour
 {
@@ -16,6 +16,10 @@ public class SimpleTrunkOnly : MonoBehaviour
     [Tooltip("Позиция багажника относительно машины")]
     public Vector3 trunkLocalPosition = new Vector3(0, 0.5f, -2f);
 
+    [Header("Визуал")]
+    [Tooltip("Префаб по умолчанию для ресурсов без CarryProp")]
+    public GameObject DefaultPrefab;
+
     [Header("UI")]
     public GameObject trunkUIPrefab;
     [Tooltip("Конкретный Canvas для UI (если null - найдет RCCP_Canvas)")]
@@ -28,6 +32,7 @@ public class SimpleTrunkOnly : MonoBehaviour
     // Созданные компоненты
     [System.NonSerialized] public StorageInventory vehicleStorage;
     [System.NonSerialized] public SimpleTrunkInteraction trunkInteraction;
+    [System.NonSerialized] public VehicleTrunkSlots trunkSlots;
 
     void Start()
     {
@@ -45,13 +50,13 @@ public class SimpleTrunkOnly : MonoBehaviour
         // 1. Основной склад машины
         SetupVehicleStorage();
 
-        // 2. Багажник с взаимодействием (БЕЗ зон выгрузки)
+        // 2. Багажник с взаимодействием И визуализацией
         SetupTrunkInteraction();
 
         // 3. UI
         SetupUI();
 
-        Debug.Log("[SimpleTrunkOnly] Настройка завершена! Только ручное взаимодействие.");
+        Debug.Log("[SimpleTrunkOnly] Настройка завершена! Только ручное взаимодействие + визуализация.");
     }
 
     void SetupVehicleStorage()
@@ -84,6 +89,26 @@ public class SimpleTrunkOnly : MonoBehaviour
             Debug.Log("[SimpleTrunkOnly] Создан объект Trunk");
         }
 
+        // Создаем корневой объект для слотов визуализации
+        GameObject slotsRoot = trunkGO.transform.Find("TrunkSlots")?.gameObject;
+        if (!slotsRoot)
+        {
+            slotsRoot = new GameObject("TrunkSlots");
+            slotsRoot.transform.SetParent(trunkGO.transform);
+            slotsRoot.transform.localPosition = Vector3.zero;
+            slotsRoot.transform.localRotation = Quaternion.identity;
+        }
+
+        // Визуализация ресурсов в багажнике
+        trunkSlots = trunkGO.GetComponent<VehicleTrunkSlots>();
+        if (!trunkSlots)
+        {
+            trunkSlots = trunkGO.AddComponent<VehicleTrunkSlots>();
+        }
+        trunkSlots.SlotRoot = slotsRoot.transform;
+        trunkSlots.MaxSlots = trunkCapacity;
+        trunkSlots.DefaultPrefab = DefaultPrefab; // можно назначить в инспекторе
+
         // Взаимодействие только с игроком
         trunkInteraction = trunkGO.GetComponent<SimpleTrunkInteraction>();
         if (!trunkInteraction)
@@ -91,6 +116,7 @@ public class SimpleTrunkOnly : MonoBehaviour
             trunkInteraction = trunkGO.AddComponent<SimpleTrunkInteraction>();
         }
         trunkInteraction.vehicleStorage = vehicleStorage;
+        trunkInteraction.trunkSlots = trunkSlots; // Связываем с визуализацией
 
         // Коллайдер для взаимодействия
         Collider trunkCollider = trunkGO.GetComponent<Collider>();
@@ -101,7 +127,7 @@ public class SimpleTrunkOnly : MonoBehaviour
             boxCollider.size = Vector3.one * 2f;
         }
 
-        Debug.Log("[SimpleTrunkOnly] Настроено взаимодействие с багажником");
+        Debug.Log("[SimpleTrunkOnly] Настроено взаимодействие с багажником + визуализация");
     }
 
     void SetupUI()
@@ -131,14 +157,41 @@ public class SimpleTrunkOnly : MonoBehaviour
             if (canvas)
             {
                 GameObject uiInstance = Instantiate(trunkUIPrefab, canvas.transform);
+                
+                // КРИТИЧЕСКИ ВАЖНО: привязываем UI СРАЗУ
                 trunkInteraction.interactionPanel = uiInstance;
 
                 var buttons = uiInstance.GetComponentsInChildren<UnityEngine.UI.Button>();
+                Debug.Log($"[SimpleTrunkOnly] Найдено кнопок в UI: {buttons.Length}");
+                
                 if (buttons.Length >= 2)
                 {
                     trunkInteraction.loadButton = buttons[0];
                     trunkInteraction.unloadButton = buttons[1];
+                    Debug.Log($"[SimpleTrunkOnly] Привязаны кнопки: {buttons[0].name}, {buttons[1].name}");
                 }
+                else
+                {
+                    Debug.LogWarning($"[SimpleTrunkOnly] В UI найдено только {buttons.Length} кнопок, ожидалось 2");
+                }
+
+                // ВАЖНО: Принудительно переподключаем кнопки после создания UI
+                if (trunkInteraction.loadButton)
+                {
+                    trunkInteraction.loadButton.onClick.RemoveAllListeners();
+                    trunkInteraction.loadButton.onClick.AddListener(trunkInteraction.LoadToTrunk);
+                    Debug.Log("[SimpleTrunkOnly] Подключена кнопка загрузки");
+                }
+
+                if (trunkInteraction.unloadButton)
+                {
+                    trunkInteraction.unloadButton.onClick.RemoveAllListeners();
+                    trunkInteraction.unloadButton.onClick.AddListener(trunkInteraction.UnloadFromTrunk);
+                    Debug.Log("[SimpleTrunkOnly] Подключена кнопка выгрузки");
+                }
+
+                // Вызываем принудительное переподключение для гарантии
+                trunkInteraction.RebindButtons();
 
                 uiInstance.SetActive(false);
                 Debug.Log($"[SimpleTrunkOnly] UI создан на Canvas: {canvas.name}");
@@ -148,6 +201,10 @@ public class SimpleTrunkOnly : MonoBehaviour
                 Debug.LogWarning("[SimpleTrunkOnly] Не найден Canvas для UI");
             }
         }
+        else
+        {
+            Debug.LogWarning("[SimpleTrunkOnly] trunkUIPrefab не назначен");
+        }
     }
 
     [ContextMenu("Clean Up")]
@@ -155,7 +212,19 @@ public class SimpleTrunkOnly : MonoBehaviour
     {
         // Удаляем созданные объекты
         Transform trunk = transform.Find("Trunk");
-        if (trunk) DestroyImmediate(trunk.gameObject);
+        if (trunk) 
+        {
+            // Очищаем визуальные слоты перед удалением
+            var slots = trunk.GetComponent<VehicleTrunkSlots>();
+            if (slots)
+            {
+                #if UNITY_EDITOR
+                slots.DebugClearAllSlots();
+                #endif
+            }
+            
+            DestroyImmediate(trunk.gameObject);
+        }
 
         if (vehicleStorage) DestroyImmediate(vehicleStorage);
 
@@ -174,286 +243,7 @@ public class SimpleTrunkOnly : MonoBehaviour
 
         // Подпись
         #if UNITY_EDITOR
-        UnityEditor.Handles.Label(trunkPos + Vector3.up, "Багажник (только ручное взаимодействие)");
+        UnityEditor.Handles.Label(trunkPos + Vector3.up, "Багажник (только ручное взаимодействие + визуализация)");
         #endif
     }
-}
-
-/// <summary>
-/// Простое взаимодействие с багажником - ТОЛЬКО ручное, без зон выгрузки
-/// </summary>
-public class SimpleTrunkInteraction : MonoBehaviour
-{
-    [Header("Ссылки")]
-    public StorageInventory vehicleStorage;
-    public GameObject interactionPanel;
-    public UnityEngine.UI.Button loadButton;
-    public UnityEngine.UI.Button unloadButton;
-    public TMPro.TextMeshProUGUI hintText;
-    
-    [Header("Настройки")]
-    public float interactionDistance = 3f;
-    
-    [Header("Отладка")]
-    public bool debugLogs = true;
-    
-    private PlayerCarryController playerCarry;
-    private bool isPlayerNearby;
-    
-    void Start()
-    {
-        playerCarry = FindObjectOfType<PlayerCarryController>();
-        
-        if (loadButton)
-        {
-            loadButton.onClick.RemoveAllListeners();
-            loadButton.onClick.AddListener(LoadToTrunk);
-        }
-            
-        if (unloadButton)
-        {
-            unloadButton.onClick.RemoveAllListeners();
-            unloadButton.onClick.AddListener(UnloadFromTrunk);
-        }
-
-        if (debugLogs)
-            Debug.Log($"[SimpleTrunkInteraction] Инициализация для {gameObject.name}");
-    }
-
-    void Update()
-    {
-        CheckPlayerDistance();
-        UpdateUI();
-    }
-
-    void CheckPlayerDistance()
-    {
-        if (!playerCarry) return;
-
-        float distance = Vector3.Distance(transform.position, playerCarry.transform.position);
-        bool wasNearby = isPlayerNearby;
-        isPlayerNearby = distance <= interactionDistance;
-
-        if (isPlayerNearby != wasNearby)
-        {
-            if (interactionPanel)
-                interactionPanel.SetActive(isPlayerNearby);
-                
-            if (debugLogs)
-                Debug.Log($"[SimpleTrunkInteraction] Игрок {(isPlayerNearby ? "подошел" : "отошел")}");
-        }
-    }
-
-    void UpdateUI()
-    {
-        if (!isPlayerNearby || !interactionPanel || !interactionPanel.activeInHierarchy)
-            return;
-
-        bool playerHasItem = playerCarry && playerCarry.IsCarrying;
-        bool trunkHasItems = HasItemsInTrunk();
-
-        // Кнопки
-        if (loadButton)
-            loadButton.interactable = playerHasItem;
-
-        if (unloadButton)
-            unloadButton.interactable = trunkHasItems;
-
-        // Подсказка
-        if (hintText)
-        {
-            if (playerHasItem && trunkHasItems)
-                hintText.text = "Можете загрузить или выгрузить";
-            else if (playerHasItem)
-                hintText.text = "Загрузить в багажник";
-            else if (trunkHasItems)
-                hintText.text = "Выгрузить из багажника";
-            else
-                hintText.text = "Багажник пуст, у вас нет предметов";
-        }
-    }
-
-    /// <summary>
-    /// Загрузить ресурс из рук в багажник
-    /// </summary>
-    public void LoadToTrunk()
-    {
-        if (!playerCarry || !vehicleStorage || !playerCarry.IsCarrying)
-        {
-            if (debugLogs)
-                Debug.LogWarning("[SimpleTrunkInteraction] Не удается загрузить: нет предмета в руках");
-            return;
-        }
-
-        var carriedProp = playerCarry.CurrentProp;
-        var tag = carriedProp.GetComponentInChildren<CarryPropTag>();
-        var resource = tag?.resource;
-
-        if (!resource)
-        {
-            Debug.LogWarning("[SimpleTrunkInteraction] Не удалось определить тип ресурса");
-            return;
-        }
-
-        // Конвертируем ResourceDef в ScriptableObject для StorageInventory
-        ScriptableObject resourceSO = resource as ScriptableObject;
-        if (!resourceSO)
-        {
-            Debug.LogWarning($"[SimpleTrunkInteraction] ResourceDef {resource.DisplayName} не является ScriptableObject");
-            return;
-        }
-
-        int added = vehicleStorage.AddItem(resourceSO, 1);
-        if (added > 0)
-        {
-            playerCarry.Detach();
-            Destroy(carriedProp);
-            
-            if (debugLogs)
-                Debug.Log($"[SimpleTrunkInteraction] ✅ Загружено в багажник: {resource.DisplayName}");
-        }
-        else
-        {
-            if (debugLogs)
-                Debug.LogWarning("[SimpleTrunkInteraction] ❌ Багажник полон или ошибка");
-        }
-    }
-
-    /// <summary>
-    /// Выгрузить ресурс из багажника в руки
-    /// </summary>
-    public void UnloadFromTrunk()
-    {
-        if (!playerCarry || !vehicleStorage)
-        {
-            if (debugLogs)
-                Debug.LogWarning("[SimpleTrunkInteraction] Нет ссылок для выгрузки");
-            return;
-        }
-
-        if (playerCarry.IsCarrying)
-        {
-            if (debugLogs)
-                Debug.LogWarning("[SimpleTrunkInteraction] У игрока уже есть предмет в руках");
-            return;
-        }
-
-        // Ищем любой ресурс в багажнике
-        var allResourceDefs = Resources.FindObjectsOfTypeAll<ResourceDef>();
-        ResourceDef found = null;
-        
-        foreach (var res in allResourceDefs)
-        {
-            ScriptableObject resourceSO = res as ScriptableObject;
-            if (resourceSO && vehicleStorage.GetAmount(resourceSO) > 0)
-            {
-                found = res;
-                break;
-            }
-        }
-
-        if (!found)
-        {
-            if (debugLogs)
-                Debug.LogWarning("[SimpleTrunkInteraction] Багажник пуст");
-            return;
-        }
-
-        ScriptableObject foundSO = found as ScriptableObject;
-        int removed = vehicleStorage.RemoveItem(foundSO, 1);
-        
-        if (removed > 0)
-        {
-            if (found.CarryProp)
-            {
-                var prop = Instantiate(found.CarryProp);
-                var tag = prop.GetComponent<CarryPropTag>();
-                if (!tag) tag = prop.AddComponent<CarryPropTag>();
-                tag.resource = found;
-
-                if (playerCarry.Attach(prop))
-                {
-                    if (debugLogs)
-                        Debug.Log($"[SimpleTrunkInteraction] ✅ Выгружено из багажника: {found.DisplayName}");
-                }
-                else
-                {
-                    Destroy(prop);
-                    if (debugLogs)
-                        Debug.LogError("[SimpleTrunkInteraction] ❌ Не удалось прикрепить к игроку");
-                }
-            }
-            else
-            {
-                if (debugLogs)
-                    Debug.LogWarning($"[SimpleTrunkInteraction] У ресурса {found.DisplayName} нет CarryProp");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Проверка наличия ресурсов в багажнике
-    /// </summary>
-    bool HasItemsInTrunk()
-    {
-        if (!vehicleStorage) return false;
-
-        var allResourceDefs = Resources.FindObjectsOfTypeAll<ResourceDef>();
-        foreach (var res in allResourceDefs)
-        {
-            ScriptableObject resourceSO = res as ScriptableObject;
-            if (resourceSO && vehicleStorage.GetAmount(resourceSO) > 0)
-                return true;
-        }
-        return false;
-    }
-
-    /// <summary>
-    /// Получить статистику багажника для отладки
-    /// </summary>
-    public string GetTrunkStatus()
-    {
-        if (!vehicleStorage) return "Нет склада";
-
-        var allResourceDefs = Resources.FindObjectsOfTypeAll<ResourceDef>();
-        int totalItems = 0;
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        
-        foreach (var res in allResourceDefs)
-        {
-            ScriptableObject resourceSO = res as ScriptableObject;
-            if (resourceSO)
-            {
-                int amount = vehicleStorage.GetAmount(resourceSO);
-                if (amount > 0)
-                {
-                    sb.AppendLine($"  {res.DisplayName}: {amount}");
-                    totalItems += amount;
-                }
-            }
-        }
-
-        return totalItems > 0 ? $"Багажник ({totalItems} предметов):\n{sb}" : "Багажник пуст";
-    }
-
-    void OnDrawGizmosSelected()
-    {
-        // Зона взаимодействия
-        Gizmos.color = isPlayerNearby ? Color.green : Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, interactionDistance);
-        
-        // Статус
-        #if UNITY_EDITOR
-        if (vehicleStorage)
-            UnityEditor.Handles.Label(transform.position + Vector3.up * 2f, GetTrunkStatus());
-        #endif
-    }
-
-    #if UNITY_EDITOR
-    [ContextMenu("DEBUG/Print Trunk Status")]
-    void DebugPrintStatus()
-    {
-        Debug.Log($"[SimpleTrunkInteraction] {GetTrunkStatus()}");
-    }
-    #endif
 }
