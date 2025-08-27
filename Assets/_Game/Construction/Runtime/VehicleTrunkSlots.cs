@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Визуализация ресурсов в багажнике машины.
-/// Аналогично ResourcePalletSlots, но для смешанных типов ресурсов.
+/// Визуализация ресурсов в багажнике машины с ручной настройкой позиций слотов.
+/// Позволяет точно указать, где должен находиться каждый ресурс.
 /// </summary>
 public class VehicleTrunkSlots : MonoBehaviour
 {
@@ -18,9 +18,23 @@ public class VehicleTrunkSlots : MonoBehaviour
     [Tooltip("Максимальное количество слотов")]
     public int MaxSlots = 20;
 
+    [Header("Ручная настройка слотов")]
+    [Tooltip("Включить ручную настройку позиций слотов")]
+    public bool ManualSlotPositions = true;
+    
+    [Tooltip("Позиции слотов (если ManualSlotPositions = true)")]
+    public List<SlotPosition> CustomSlotPositions = new List<SlotPosition>();
+
     [Header("Визуал по умолчанию")]
     [Tooltip("Префаб для ресурсов без CarryProp")]
     public GameObject DefaultPrefab;
+    
+    [Header("Физика слотов")]
+    [Tooltip("Добавить коллайдеры к слотам для физического взаимодействия")]
+    public bool AddSlotColliders = true;
+    
+    [Tooltip("Размер коллайдера слота")]
+    public Vector3 SlotColliderSize = new Vector3(0.4f, 0.4f, 0.4f);
     
     [Header("Отладка")]
     public bool ShowDebugInfo = false;
@@ -30,6 +44,25 @@ public class VehicleTrunkSlots : MonoBehaviour
     
     // Данные о том, какой ресурс в каком слоте
     private readonly Dictionary<Transform, SlotData> _slotData = new Dictionary<Transform, SlotData>();
+
+    [System.Serializable]
+    public class SlotPosition
+    {
+        [Tooltip("Название слота")]
+        public string slotName = "Slot";
+        
+        [Tooltip("Локальная позиция относительно корня багажника")]
+        public Vector3 localPosition = Vector3.zero;
+        
+        [Tooltip("Локальный поворот")]
+        public Vector3 localRotation = Vector3.zero;
+        
+        [Tooltip("Размер слота для коллайдера")]
+        public Vector3 size = new Vector3(0.4f, 0.4f, 0.4f);
+        
+        [Tooltip("Цвет слота в редакторе")]
+        public Color gizmoColor = Color.blue;
+    }
 
     [System.Serializable]
     public class SlotData
@@ -58,15 +91,23 @@ public class VehicleTrunkSlots : MonoBehaviour
             return;
         }
 
-        // Собираем существующие слоты
-        foreach (Transform child in SlotRoot)
+        if (ManualSlotPositions && CustomSlotPositions.Count > 0)
         {
-            if (child.name.StartsWith("Slot_"))
-                _slots.Add(child);
+            // Создаем слоты по ручным настройкам
+            CreateManualSlots();
         }
+        else
+        {
+            // Собираем существующие слоты
+            foreach (Transform child in SlotRoot)
+            {
+                if (child.name.StartsWith("Slot_"))
+                    _slots.Add(child);
+            }
 
-        // Создаем недостающие слоты если нужно
-        CreateMissingSlots();
+            // Создаем недостающие слоты если нужно
+            CreateMissingSlots();
+        }
         
         // Сортируем слоты по номерам
         _slots.Sort((a, b) => {
@@ -76,12 +117,45 @@ public class VehicleTrunkSlots : MonoBehaviour
             return string.Compare(a.name, b.name);
         });
 
+        // Добавляем коллайдеры к слотам
+        if (AddSlotColliders)
+        {
+            AddCollidersToSlots();
+        }
+
         if (ShowDebugInfo)
             Debug.Log($"[VehicleTrunkSlots] Найдено {_slots.Count} слотов в {name}");
     }
 
     /// <summary>
-    /// Создание недостающих слотов
+    /// Создание слотов по ручным настройкам
+    /// </summary>
+    void CreateManualSlots()
+    {
+        for (int i = 0; i < CustomSlotPositions.Count; i++)
+        {
+            var slotPos = CustomSlotPositions[i];
+            
+            // Проверяем, существует ли уже слот с таким именем
+            Transform existingSlot = SlotRoot.Find(slotPos.slotName);
+            if (existingSlot)
+            {
+                _slots.Add(existingSlot);
+                continue;
+            }
+
+            // Создаем новый слот
+            GameObject slotGO = new GameObject(slotPos.slotName);
+            slotGO.transform.SetParent(SlotRoot);
+            slotGO.transform.localPosition = slotPos.localPosition;
+            slotGO.transform.localRotation = Quaternion.Euler(slotPos.localRotation);
+            
+            _slots.Add(slotGO.transform);
+        }
+    }
+
+    /// <summary>
+    /// Создание недостающих слотов (для обратной совместимости)
     /// </summary>
     void CreateMissingSlots()
     {
@@ -100,7 +174,7 @@ public class VehicleTrunkSlots : MonoBehaviour
     }
 
     /// <summary>
-    /// Расчет позиции слота (сетка 4x5)
+    /// Расчет позиции слота (сетка 4x5) - для обратной совместимости
     /// </summary>
     Vector3 CalculateSlotPosition(int index)
     {
@@ -113,6 +187,45 @@ public class VehicleTrunkSlots : MonoBehaviour
             0f,
             z * 0.5f
         );
+    }
+
+    /// <summary>
+    /// Добавление коллайдеров к слотам
+    /// </summary>
+    void AddCollidersToSlots()
+    {
+        for (int i = 0; i < _slots.Count; i++)
+        {
+            var slot = _slots[i];
+            if (!slot) continue;
+
+            // Убираем существующие коллайдеры
+            var existingCollider = slot.GetComponent<Collider>();
+            if (existingCollider)
+                DestroyImmediate(existingCollider);
+
+            // Добавляем новый коллайдер
+            var boxCollider = slot.gameObject.AddComponent<BoxCollider>();
+            boxCollider.isTrigger = true;
+            
+            // Используем размер из настроек или по умолчанию
+            if (ManualSlotPositions && i < CustomSlotPositions.Count)
+            {
+                boxCollider.size = CustomSlotPositions[i].size;
+            }
+            else
+            {
+                boxCollider.size = SlotColliderSize;
+            }
+
+            // Добавляем компонент для отображения информации о слоте
+            var slotInfo = slot.GetComponent<TrunkSlotInfo>();
+            if (!slotInfo)
+                slotInfo = slot.gameObject.AddComponent<TrunkSlotInfo>();
+            
+            slotInfo.slotIndex = i;
+            slotInfo.slotName = slot.name;
+        }
     }
 
     /// <summary>
@@ -312,6 +425,52 @@ public class VehicleTrunkSlots : MonoBehaviour
     }
 
     /// <summary>
+    /// Разместить ресурс в конкретном слоте по индексу
+    /// </summary>
+    public bool PlaceResourceInSpecificSlot(GameObject obj, ResourceDef resource, int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= _slots.Count)
+        {
+            Debug.LogError($"[VehicleTrunkSlots] Неверный индекс слота: {slotIndex}");
+            return false;
+        }
+
+        var slot = _slots[slotIndex];
+        var slotData = _slotData[slot];
+
+        if (!slotData.isEmpty)
+        {
+            Debug.LogWarning($"[VehicleTrunkSlots] Слот {slotIndex} уже занят ресурсом {slotData.resource.DisplayName}");
+            return false;
+        }
+
+        // Размещаем объект в указанном слоте
+        obj.transform.SetParent(slot, false);
+        obj.transform.localPosition = Vector3.zero;
+        obj.transform.localRotation = Quaternion.identity;
+
+        // Убираем физику для стабильности
+        if (obj.TryGetComponent<Rigidbody>(out var rb)) 
+            Destroy(rb);
+        
+        foreach (var col in obj.GetComponentsInChildren<Collider>()) 
+            col.enabled = false;
+
+        // Гарантируем правильный тег ресурса
+        var tag = obj.GetComponent<CarryPropTag>();
+        if (!tag)
+            tag = obj.AddComponent<CarryPropTag>();
+        tag.resource = resource;
+
+        // Обновляем данные слота
+        slotData.resource = resource;
+        slotData.visualObject = obj;
+
+        Debug.Log($"[VehicleTrunkSlots] ✅ Размещен ресурс {resource.DisplayName} в слоте {slotIndex}");
+        return true;
+    }
+
+    /// <summary>
     /// Взять один ресурс из багажника (для игрока)
     /// </summary>
     public GameObject TakeOne()
@@ -406,6 +565,23 @@ public class VehicleTrunkSlots : MonoBehaviour
         return counts;
     }
 
+    /// <summary>
+    /// Получить информацию о слоте по индексу
+    /// </summary>
+    public SlotData GetSlotData(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= _slots.Count)
+            return null;
+        
+        var slot = _slots[slotIndex];
+        return _slotData.ContainsKey(slot) ? _slotData[slot] : null;
+    }
+
+    /// <summary>
+    /// Получить количество слотов
+    /// </summary>
+    public int SlotCount => _slots.Count;
+
     void OnDrawGizmosSelected()
     {
         if (_slots == null || _slots.Count == 0) return;
@@ -417,7 +593,31 @@ public class VehicleTrunkSlots : MonoBehaviour
 
             var slotData = _slotData.ContainsKey(slot) ? _slotData[slot] : null;
             
-            Gizmos.color = slotData != null && !slotData.isEmpty ? Color.green : Color.gray;
+            // Определяем цвет слота
+            Color slotColor;
+            if (slotData != null && !slotData.isEmpty)
+            {
+                slotColor = Color.green; // Занятый слот
+            }
+            else if (ManualSlotPositions)
+            {
+                // Ищем настройки для этого слота
+                int slotIndex = _slots.IndexOf(slot);
+                if (slotIndex >= 0 && slotIndex < CustomSlotPositions.Count)
+                {
+                    slotColor = CustomSlotPositions[slotIndex].gizmoColor;
+                }
+                else
+                {
+                    slotColor = Color.blue; // По умолчанию
+                }
+            }
+            else
+            {
+                slotColor = Color.gray; // Автоматический слот
+            }
+            
+            Gizmos.color = slotColor;
             Gizmos.DrawWireCube(slot.position, Vector3.one * 0.3f);
         }
     }
@@ -444,7 +644,7 @@ public class VehicleTrunkSlots : MonoBehaviour
     }
 
     [ContextMenu("DEBUG/Print Slot Info")]
-    void DebugPrintSlotInfo()
+    public void DebugPrintSlotInfo()
     {
         Debug.Log($"[VehicleTrunkSlots] Слотов: {_slots.Count}, Занято: {VisualCount}");
         
@@ -454,5 +654,42 @@ public class VehicleTrunkSlots : MonoBehaviour
             Debug.Log($"  - {kvp.Key.DisplayName}: {kvp.Value}");
         }
     }
+
+    [ContextMenu("DEBUG/Regenerate Slots")]
+    public void DebugRegenerateSlots()
+    {
+        FindSlots();
+        InitializeSlots();
+        Debug.Log("[VehicleTrunkSlots] Слоты пересозданы");
+    }
     #endif
+}
+
+/// <summary>
+/// Компонент для отображения информации о слоте в инспекторе
+/// </summary>
+public class TrunkSlotInfo : MonoBehaviour
+{
+    [Header("Информация о слоте")]
+    public int slotIndex;
+    public string slotName;
+    
+    [Header("Статус")]
+    public bool isOccupied;
+    public string resourceName;
+    
+    void Update()
+    {
+        // Обновляем информацию о слоте
+        var trunkSlots = GetComponentInParent<VehicleTrunkSlots>();
+        if (trunkSlots)
+        {
+            var slotData = trunkSlots.GetSlotData(slotIndex);
+            if (slotData != null)
+            {
+                isOccupied = !slotData.isEmpty;
+                resourceName = slotData.resource != null ? slotData.resource.DisplayName : "Пусто";
+            }
+        }
+    }
 }

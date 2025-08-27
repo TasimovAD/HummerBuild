@@ -39993,6 +39993,7 @@ GameObject:
   - component: {fileID: 1267832164}
   - component: {fileID: 1267832163}
   - component: {fileID: 1267832162}
+  - component: {fileID: 1267832165}
   m_Layer: 0
   m_Name: Trunk
   m_TagString: Untagged
@@ -40072,8 +40073,129 @@ MonoBehaviour:
   SlotRoot: {fileID: 1175491248}
   AutoFindSlots: 1
   MaxSlots: 20
+  ManualSlotPositions: 1
+  CustomSlotPositions:
+  - slotName: Slot_0
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_1
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_2
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_3
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_4
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_5
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_6
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_7
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_8
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_9
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_10
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_11
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_12
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_13
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_14
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_15
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_16
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_17
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_18
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
+  - slotName: Slot_19
+    localPosition: {x: 0, y: -1.131, z: 2.406}
+    localRotation: {x: 0, y: -90, z: 0}
+    size: {x: 0, y: 0, z: 0}
+    gizmoColor: {r: 0, g: 0, b: 0, a: 0}
   DefaultPrefab: {fileID: 0}
+  AddSlotColliders: 0
+  SlotColliderSize: {x: 0.4, y: 0.4, z: 0.4}
   ShowDebugInfo: 0
+--- !u!114 &1267832165
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1267832160}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20defa59f37d44044b8b1d6849a6556e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  testSlotIndex: 20
+  testResource: {fileID: 11400000, guid: 6517d5039d8754b27b64f0b5abd25b84, type: 2}
+  testPrefab: {fileID: 8931963708877791020, guid: 8fe6d420381d948e2bca686fb0093cef, type: 3}
+  autoTestOnStart: 0
+  testInterval: 2
 --- !u!4 &1270180698 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2038440639657329207, guid: 5945239b14ac3d341b44d5f6a68df73e, type: 3}
@@ -49014,6 +49136,10 @@ MonoBehaviour:
   trunkCapacity: 20
   maxWeight: 200
   trunkLocalPosition: {x: 0, y: 0.5, z: -2.8}
+  manualSlotConfiguration: 1
+  gridSize: {x: 4, y: 5}
+  slotSpacing: 0.5
+  slotHeight: 0.1
   DefaultPrefab: {fileID: 0}
   trunkUIPrefab: {fileID: 461352121165956037, guid: fe38488464e60481191f407af31450fb, type: 3}
   targetCanvas: {fileID: 1639152699881484694}

@@ -3,6 +3,7 @@ using UnityEngine;
 /// <summary>
 /// Простая система багажника ТОЛЬКО с ручным взаимодействием игрока.
 /// Без автоматической выгрузки и зон передачи + визуализация ресурсов.
+/// Поддерживает ручную настройку позиций слотов для точного размещения ресурсов.
 /// </summary>
 public class SimpleTrunkOnly : MonoBehaviour
 {
@@ -15,6 +16,19 @@ public class SimpleTrunkOnly : MonoBehaviour
     
     [Tooltip("Позиция багажника относительно машины")]
     public Vector3 trunkLocalPosition = new Vector3(0, 0.5f, -2f);
+
+    [Header("Настройка слотов")]
+    [Tooltip("Включить ручную настройку позиций слотов")]
+    public bool manualSlotConfiguration = true;
+    
+    [Tooltip("Размер сетки слотов (если не используется ручная настройка)")]
+    public Vector2Int gridSize = new Vector2Int(4, 5);
+    
+    [Tooltip("Расстояние между слотами")]
+    public float slotSpacing = 0.5f;
+    
+    [Tooltip("Высота слотов от дна багажника")]
+    public float slotHeight = 0.1f;
 
     [Header("Визуал")]
     [Tooltip("Префаб по умолчанию для ресурсов без CarryProp")]
@@ -108,6 +122,16 @@ public class SimpleTrunkOnly : MonoBehaviour
         trunkSlots.SlotRoot = slotsRoot.transform;
         trunkSlots.MaxSlots = trunkCapacity;
         trunkSlots.DefaultPrefab = DefaultPrefab; // можно назначить в инспекторе
+        
+        // Настройка ручной конфигурации слотов
+        if (manualSlotConfiguration)
+        {
+            SetupManualSlotConfiguration();
+        }
+        else
+        {
+            SetupGridSlotConfiguration();
+        }
 
         // Взаимодействие только с игроком
         trunkInteraction = trunkGO.GetComponent<SimpleTrunkInteraction>();
@@ -128,6 +152,113 @@ public class SimpleTrunkOnly : MonoBehaviour
         }
 
         Debug.Log("[SimpleTrunkOnly] Настроено взаимодействие с багажником + визуализация");
+    }
+
+    /// <summary>
+    /// Настройка ручной конфигурации слотов
+    /// </summary>
+    void SetupManualSlotConfiguration()
+    {
+        trunkSlots.ManualSlotPositions = true;
+        trunkSlots.AddSlotColliders = true;
+        
+        // Если у нас еще нет настроек слотов, создаем базовые
+        if (trunkSlots.CustomSlotPositions.Count == 0)
+        {
+            CreateDefaultSlotPositions();
+        }
+        
+        Debug.Log("[SimpleTrunkOnly] Настроена ручная конфигурация слотов");
+    }
+
+    /// <summary>
+    /// Настройка сеточной конфигурации слотов
+    /// </summary>
+    void SetupGridSlotConfiguration()
+    {
+        trunkSlots.ManualSlotPositions = false;
+        trunkSlots.AddSlotColliders = true;
+        
+        // Создаем слоты в сетке
+        CreateGridSlots();
+        
+        Debug.Log($"[SimpleTrunkOnly] Настроена сеточная конфигурация слотов {gridSize.x}x{gridSize.y}");
+    }
+
+    /// <summary>
+    /// Создание базовых позиций слотов для ручной настройки
+    /// </summary>
+    void CreateDefaultSlotPositions()
+    {
+        trunkSlots.CustomSlotPositions.Clear();
+        
+        // Создаем базовую сетку 4x5 как отправную точку
+        for (int z = 0; z < 5; z++)
+        {
+            for (int x = 0; x < 4; x++)
+            {
+                var slotPos = new VehicleTrunkSlots.SlotPosition
+                {
+                    slotName = $"Slot_{z * 4 + x}",
+                    localPosition = new Vector3(
+                        x * slotSpacing - (4 * slotSpacing * 0.5f), // центрируем по X
+                        slotHeight,
+                        z * slotSpacing
+                    ),
+                    localRotation = Vector3.zero,
+                    size = new Vector3(0.4f, 0.4f, 0.4f),
+                    gizmoColor = new Color(
+                        Random.Range(0.3f, 0.8f),
+                        Random.Range(0.3f, 0.8f),
+                        Random.Range(0.3f, 0.8f)
+                    )
+                };
+                
+                trunkSlots.CustomSlotPositions.Add(slotPos);
+            }
+        }
+        
+        Debug.Log($"[SimpleTrunkOnly] Создано {trunkSlots.CustomSlotPositions.Count} базовых позиций слотов");
+    }
+
+    /// <summary>
+    /// Создание слотов в сетке для автоматической конфигурации
+    /// </summary>
+    void CreateGridSlots()
+    {
+        // Находим корень слотов
+        var slotsRoot = trunkSlots.SlotRoot;
+        if (!slotsRoot) return;
+
+        // Очищаем существующие слоты
+        for (int i = slotsRoot.childCount - 1; i >= 0; i--)
+        {
+            if (Application.isPlaying)
+                Destroy(slotsRoot.GetChild(i).gameObject);
+            else
+                DestroyImmediate(slotsRoot.GetChild(i).gameObject);
+        }
+
+        // Создаем новые слоты в сетке
+        for (int z = 0; z < gridSize.y; z++)
+        {
+            for (int x = 0; x < gridSize.x; x++)
+            {
+                GameObject slotGO = new GameObject($"Slot_{z * gridSize.x + x}");
+                slotGO.transform.SetParent(slotsRoot);
+                
+                Vector3 position = new Vector3(
+                    x * slotSpacing - (gridSize.x * slotSpacing * 0.5f), // центрируем по X
+                    slotHeight,
+                    z * slotSpacing
+                );
+                
+                slotGO.transform.localPosition = position;
+                slotGO.transform.localRotation = Quaternion.identity;
+            }
+        }
+        
+        Debug.Log($"[SimpleTrunkOnly] Создано {gridSize.x * gridSize.y} слотов в сетке");
     }
 
     void SetupUI()
@@ -231,6 +362,16 @@ public class SimpleTrunkOnly : MonoBehaviour
         Debug.Log("[SimpleTrunkOnly] Компоненты очищены");
     }
 
+    [ContextMenu("Regenerate Slots")]
+    public void RegenerateSlots()
+    {
+        if (trunkSlots)
+        {
+            trunkSlots.DebugRegenerateSlots();
+            Debug.Log("[SimpleTrunkOnly] Слоты пересозданы");
+        }
+    }
+
     void OnDrawGizmosSelected()
     {
         if (!showGizmos) return;
@@ -241,9 +382,30 @@ public class SimpleTrunkOnly : MonoBehaviour
         Gizmos.DrawWireCube(trunkPos, Vector3.one);
         Gizmos.DrawWireSphere(trunkPos, 2f); // Зона взаимодействия
 
+        // Показываем сетку слотов если включена
+        if (manualSlotConfiguration && gridSize.x > 0 && gridSize.y > 0)
+        {
+            Gizmos.color = Color.yellow;
+            Vector3 gridCenter = trunkPos + Vector3.up * slotHeight;
+            
+            for (int z = 0; z < gridSize.y; z++)
+            {
+                for (int x = 0; x < gridSize.x; x++)
+                {
+                    Vector3 slotPos = gridCenter + new Vector3(
+                        x * slotSpacing - (gridSize.x * slotSpacing * 0.5f),
+                        0,
+                        z * slotSpacing
+                    );
+                    Gizmos.DrawWireCube(slotPos, Vector3.one * 0.3f);
+                }
+            }
+        }
+
         // Подпись
         #if UNITY_EDITOR
-        UnityEditor.Handles.Label(trunkPos + Vector3.up, "Багажник (только ручное взаимодействие + визуализация)");
+        string configType = manualSlotConfiguration ? "ручная настройка" : "сетка";
+        UnityEditor.Handles.Label(trunkPos + Vector3.up * 2, $"Багажник ({configType})");
         #endif
     }
 }
