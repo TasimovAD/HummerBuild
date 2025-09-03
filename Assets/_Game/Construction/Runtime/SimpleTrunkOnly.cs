@@ -367,7 +367,11 @@ public class SimpleTrunkOnly : MonoBehaviour
     {
         if (trunkSlots)
         {
+            #if UNITY_EDITOR
             trunkSlots.DebugRegenerateSlots();
+            #else
+            trunkSlots.FindSlots();
+            #endif
             Debug.Log("[SimpleTrunkOnly] Слоты пересозданы");
         }
     }

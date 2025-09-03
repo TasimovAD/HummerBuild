@@ -101,7 +101,11 @@ public class TrunkSlotTester : MonoBehaviour
     {
         if (trunkSlots)
         {
+            #if UNITY_EDITOR
             trunkSlots.DebugClearAllSlots();
+            #else
+            trunkSlots.ClearAllSlots();
+            #endif
             Debug.Log("[TrunkSlotTester] Все слоты очищены");
         }
     }
@@ -111,7 +115,11 @@ public class TrunkSlotTester : MonoBehaviour
     {
         if (trunkSlots)
         {
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
             trunkSlots.DebugPrintSlotInfo();
+            #else
+            Debug.Log($"[TrunkSlotTester] Слотов: {trunkSlots.SlotCount}");
+            #endif
         }
     }
 

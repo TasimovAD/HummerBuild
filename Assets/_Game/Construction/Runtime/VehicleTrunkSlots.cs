@@ -326,7 +326,7 @@ public class VehicleTrunkSlots : MonoBehaviour
     /// <summary>
     /// Очистка всех слотов
     /// </summary>
-    void ClearAllSlots()
+    public void ClearAllSlots()
     {
         foreach (var slot in _slots)
         {
@@ -533,16 +533,7 @@ public class VehicleTrunkSlots : MonoBehaviour
         return TakeOne();
     }
 
-    /// <summary>
-    /// Получить количество визуально отображаемых ресурсов
-    /// </summary>
-    public int VisualCount
-    {
-        get
-        {
-            return _slotData.Values.Count(data => !data.isEmpty);
-        }
-    }
+
 
     /// <summary>
     /// Получить список всех ресурсов в багажнике
@@ -581,6 +572,27 @@ public class VehicleTrunkSlots : MonoBehaviour
     /// Получить количество слотов
     /// </summary>
     public int SlotCount => _slots.Count;
+
+    /// <summary>
+    /// Получить количество визуально отображаемых ресурсов
+    /// </summary>
+    public int VisualCount
+    {
+        get
+        {
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return _slotData.Values.Count(data => !data.isEmpty);
+            #else
+            // Оптимизированная версия для финальной сборки
+            int count = 0;
+            foreach (var slotData in _slotData.Values)
+            {
+                if (!slotData.isEmpty) count++;
+            }
+            return count;
+            #endif
+        }
+    }
 
     void OnDrawGizmosSelected()
     {
