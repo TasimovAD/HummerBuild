@@ -1,5 +1,4 @@
 {
-    "version": 1,
     "name": "RCCP_InputActions",
     "maps": [
         {
@@ -37,7 +36,7 @@
                     "name": "Handbrake",
                     "type": "Button",
                     "id": "862a1da3-327a-425f-bc3a-c144667b0f07",
-                    "expectedControlType": "",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -55,7 +54,7 @@
                     "name": "Low Beam Lights",
                     "type": "Button",
                     "id": "372f474d-e084-434c-8671-5dde678119fc",
-                    "expectedControlType": "",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "Press",
                     "initialStateCheck": false
@@ -1243,7 +1242,7 @@
                     "type": "Value",
                     "id": "f533f3d2-f07d-4dc7-b0cb-c4446055fdbf",
                     "expectedControlType": "Vector2",
-                    "processors": "ScaleVector2(x=0.001,y=0.001);InvertVector2",
+                    "processors": "ScaleVector2(x=0.001,y=0.001),InvertVector2",
                     "interactions": "Press",
                     "initialStateCheck": true
                 },
@@ -1466,7 +1465,7 @@
                     "name": "Record",
                     "type": "Button",
                     "id": "97e1cd85-e655-4c88-99b5-41db78efd038",
-                    "expectedControlType": "",
+                    "expectedControlType": "Button",
                     "processors": "",
                     "interactions": "Press",
                     "initialStateCheck": false
